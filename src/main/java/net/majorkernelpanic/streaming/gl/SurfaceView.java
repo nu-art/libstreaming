@@ -18,9 +18,6 @@
 
 package net.majorkernelpanic.streaming.gl;
 
-import java.util.concurrent.Semaphore;
-import net.majorkernelpanic.streaming.MediaStream;
-import net.majorkernelpanic.streaming.video.VideoStream;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.graphics.SurfaceTexture.OnFrameAvailableListener;
@@ -30,76 +27,97 @@ import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 
+import net.majorkernelpanic.streaming.MediaStream;
+import net.majorkernelpanic.streaming.video.VideoStream;
+
+import java.util.concurrent.Semaphore;
+
 /**
- * An enhanced SurfaceView in which the camera preview will be rendered. 
- * This class was needed for two reasons. <br /> 
- * 
- * First, it allows to use to feed MediaCodec with the camera preview 
- * using the surface-to-buffer method while rendering it in a surface 
- * visible to the user. To force the surface-to-buffer method in 
+ * An enhanced SurfaceView in which the camera preview will be rendered.
+ * This class was needed for two reasons. <br />
+ *
+ * First, it allows to use to feed MediaCodec with the camera preview
+ * using the surface-to-buffer method while rendering it in a surface
+ * visible to the user. To force the surface-to-buffer method in
  * libstreaming, call {@link MediaStream#setStreamingMethod(byte)}
- * with {@link MediaStream#MODE_MEDIACODEC_API_2}. <br /> 
- * 
- * Second, it allows to force the aspect ratio of the SurfaceView 
- * to match the aspect ratio of the camera preview, so that the 
- * preview do not appear distorted to the user of your app. To do 
+ * with {@link MediaStream#MODE_MEDIACODEC_API_2}. <br />
+ *
+ * Second, it allows to force the aspect ratio of the SurfaceView
+ * to match the aspect ratio of the camera preview, so that the
+ * preview do not appear distorted to the user of your app. To do
  * that, call {@link SurfaceView#setAspectRatioMode(int)} with
- * {@link SurfaceView#ASPECT_RATIO_PREVIEW} after creating your 
+ * {@link SurfaceView#ASPECT_RATIO_PREVIEW} after creating your
  * {@link SurfaceView}. <br />
- * 
  */
-public class SurfaceView extends android.view.SurfaceView implements Runnable, OnFrameAvailableListener, SurfaceHolder.Callback {
+public class SurfaceView
+		extends android.view.SurfaceView
+		implements Runnable, OnFrameAvailableListener, SurfaceHolder.Callback {
 
 	public final static String TAG = "SurfaceView";
 
-	/** 
-	 * The aspect ratio of the surface view will be equal 
+	/**
+	 * The aspect ratio of the surface view will be equal
 	 * to the aspect ration of the camera preview.
 	 **/
 	public static final int ASPECT_RATIO_PREVIEW = 0x01;
-	
-	/** The surface view will fill completely fill its parent. */
+
+	/**
+	 * The surface view will fill completely fill its parent.
+	 */
 	public static final int ASPECT_RATIO_STRETCH = 0x00;
-	
+
 	private Thread mThread = null;
+
 	private Handler mHandler = null;
-	private boolean mFrameAvailable = false; 
+
+	private boolean mFrameAvailable = false;
+
 	private boolean mRunning = true;
+
 	private int mAspectRatioMode = ASPECT_RATIO_STRETCH;
 
 	// The surface in which the preview is rendered
 	private SurfaceManager mViewSurfaceManager = null;
-	
+
 	// The input surface of the MediaCodec
 	private SurfaceManager mCodecSurfaceManager = null;
-	
+
 	// Handles the rendering of the SurfaceTexture we got 
 	// from the camera, onto a Surface
 	private TextureManager mTextureManager = null;
 
 	private final Semaphore mLock = new Semaphore(0);
+
 	private final Object mSyncObject = new Object();
 
 	// Allows to force the aspect ratio of the preview
 	private ViewAspectRatioMeasurer mVARM = new ViewAspectRatioMeasurer();
-	
+
+	private SurfaceHolder surfaceHolder;
+
+	public Surface getSurface() {
+		if (surfaceHolder == null)
+			return null;
+		return surfaceHolder.getSurface();
+	}
+
 	public SurfaceView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		mHandler = new Handler();
 		getHolder().addCallback(this);
-	}	
+	}
 
 	public void setAspectRatioMode(int mode) {
 		mAspectRatioMode = mode;
 	}
-	
+
 	public SurfaceTexture getSurfaceTexture() {
 		return mTextureManager.getSurfaceTexture();
 	}
 
 	public void addMediaCodecSurface(Surface surface) {
 		synchronized (mSyncObject) {
-			mCodecSurfaceManager = new SurfaceManager(surface,mViewSurfaceManager);			
+			mCodecSurfaceManager = new SurfaceManager(surface, mViewSurfaceManager);
 		}
 	}
 
@@ -113,7 +131,7 @@ public class SurfaceView extends android.view.SurfaceView implements Runnable, O
 	}
 
 	public void startGLThread() {
-		Log.d(TAG,"Thread started.");
+		Log.d(TAG, "Thread started.");
 		if (mTextureManager == null) {
 			mTextureManager = new TextureManager();
 		}
@@ -130,7 +148,8 @@ public class SurfaceView extends android.view.SurfaceView implements Runnable, O
 
 		mViewSurfaceManager = new SurfaceManager(getHolder().getSurface());
 		mViewSurfaceManager.makeCurrent();
-		mTextureManager.createTexture().setOnFrameAvailableListener(this);
+		mTextureManager.createTexture()
+									 .setOnFrameAvailableListener(this);
 
 		mLock.release();
 
@@ -151,14 +170,14 @@ public class SurfaceView extends android.view.SurfaceView implements Runnable, O
 							mCodecSurfaceManager.makeCurrent();
 							mTextureManager.drawFrame();
 							oldts = ts;
-							ts = mTextureManager.getSurfaceTexture().getTimestamp();
+							ts = mTextureManager.getSurfaceTexture()
+																	.getTimestamp();
 							//Log.d(TAG,"FPS: "+(1000000000/(ts-oldts)));
 							mCodecSurfaceManager.setPresentationTime(ts);
 							mCodecSurfaceManager.swapBuffer();
 						}
-
 					} else {
-						Log.e(TAG,"No frame received !");
+						Log.e(TAG, "No frame received !");
 					}
 				}
 			}
@@ -173,13 +192,13 @@ public class SurfaceView extends android.view.SurfaceView implements Runnable, O
 	public void onFrameAvailable(SurfaceTexture surfaceTexture) {
 		synchronized (mSyncObject) {
 			mFrameAvailable = true;
-			mSyncObject.notifyAll();	
+			mSyncObject.notifyAll();
 		}
 	}
 
 	@Override
-	public void surfaceChanged(SurfaceHolder holder, int format, int width,
-			int height) {
+	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+		this.surfaceHolder = holder;
 	}
 
 	@Override
@@ -195,7 +214,7 @@ public class SurfaceView extends android.view.SurfaceView implements Runnable, O
 	}
 
 	@Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 		if (mVARM.getAspectRatio() > 0 && mAspectRatioMode == ASPECT_RATIO_PREVIEW) {
 			mVARM.measure(widthMeasureSpec, heightMeasureSpec);
 			setMeasuredDimension(mVARM.getMeasuredWidth(), mVARM.getMeasuredHeight());
@@ -205,7 +224,7 @@ public class SurfaceView extends android.view.SurfaceView implements Runnable, O
 	}
 
 	/**
-	 * Requests a certain aspect ratio for the preview. You don't have to call this yourself, 
+	 * Requests a certain aspect ratio for the preview. You don't have to call this yourself,
 	 * the {@link VideoStream} will do it when it's needed.
 	 */
 	public void requestAspectRatio(double aspectRatio) {
@@ -221,9 +240,10 @@ public class SurfaceView extends android.view.SurfaceView implements Runnable, O
 			});
 		}
 	}
-		
+
 	/**
 	 * This class is a helper to measure views that require a specific aspect ratio.
+	 *
 	 * @author Jesper Borgstrup
 	 */
 	public class ViewAspectRatioMeasurer {
@@ -231,19 +251,20 @@ public class SurfaceView extends android.view.SurfaceView implements Runnable, O
 		private double aspectRatio;
 
 		public void setAspectRatio(double aspectRatio) {
-			this.aspectRatio = aspectRatio; 
+			this.aspectRatio = aspectRatio;
 		}
 
 		public double getAspectRatio() {
-			return this.aspectRatio; 
+			return this.aspectRatio;
 		}
-		
+
 		/**
 		 * Measure with the aspect ratio given at construction.<br />
 		 * <br />
 		 * After measuring, get the width and height with the {@link #getMeasuredWidth()}
 		 * and {@link #getMeasuredHeight()} methods, respectively.
-		 * @param widthMeasureSpec The width <tt>MeasureSpec</tt> passed in your <tt>View.onMeasure()</tt> method
+		 *
+		 * @param widthMeasureSpec  The width <tt>MeasureSpec</tt> passed in your <tt>View.onMeasure()</tt> method
 		 * @param heightMeasureSpec The height <tt>MeasureSpec</tt> passed in your <tt>View.onMeasure()</tt> method
 		 */
 		public void measure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -255,74 +276,71 @@ public class SurfaceView extends android.view.SurfaceView implements Runnable, O
 		 * <br />
 		 * After measuring, get the width and height with the {@link #getMeasuredWidth()}
 		 * and {@link #getMeasuredHeight()} methods, respectively.
-		 * @param widthMeasureSpec The width <tt>MeasureSpec</tt> passed in your <tt>View.onMeasure()</tt> method
+		 *
+		 * @param widthMeasureSpec  The width <tt>MeasureSpec</tt> passed in your <tt>View.onMeasure()</tt> method
 		 * @param heightMeasureSpec The height <tt>MeasureSpec</tt> passed in your <tt>View.onMeasure()</tt> method
-		 * @param aspectRatio The aspect ratio to calculate measurements in respect to 
+		 * @param aspectRatio       The aspect ratio to calculate measurements in respect to
 		 */
 		public void measure(int widthMeasureSpec, int heightMeasureSpec, double aspectRatio) {
-			int widthMode = MeasureSpec.getMode( widthMeasureSpec );
-			int widthSize = widthMode == MeasureSpec.UNSPECIFIED ? Integer.MAX_VALUE : MeasureSpec.getSize( widthMeasureSpec );
-			int heightMode = MeasureSpec.getMode( heightMeasureSpec );
-			int heightSize = heightMode == MeasureSpec.UNSPECIFIED ? Integer.MAX_VALUE : MeasureSpec.getSize( heightMeasureSpec );
+			int widthMode = MeasureSpec.getMode(widthMeasureSpec);
+			int widthSize = widthMode == MeasureSpec.UNSPECIFIED ? Integer.MAX_VALUE : MeasureSpec.getSize(widthMeasureSpec);
+			int heightMode = MeasureSpec.getMode(heightMeasureSpec);
+			int heightSize = heightMode == MeasureSpec.UNSPECIFIED ? Integer.MAX_VALUE : MeasureSpec.getSize(heightMeasureSpec);
 
-			if ( heightMode == MeasureSpec.EXACTLY && widthMode == MeasureSpec.EXACTLY ) {
+			if (heightMode == MeasureSpec.EXACTLY && widthMode == MeasureSpec.EXACTLY) {
 				/* 
 				 * Possibility 1: Both width and height fixed
 				 */
 				measuredWidth = widthSize;
 				measuredHeight = heightSize;
-
-			} else if ( heightMode == MeasureSpec.EXACTLY ) {
+			} else if (heightMode == MeasureSpec.EXACTLY) {
 				/*
 				 * Possibility 2: Width dynamic, height fixed
 				 */
-				measuredWidth = (int) Math.min( widthSize, heightSize * aspectRatio );
+				measuredWidth = (int) Math.min(widthSize, heightSize * aspectRatio);
 				measuredHeight = (int) (measuredWidth / aspectRatio);
-
-			} else if ( widthMode == MeasureSpec.EXACTLY ) {
+			} else if (widthMode == MeasureSpec.EXACTLY) {
 				/*
 				 * Possibility 3: Width fixed, height dynamic
 				 */
-				measuredHeight = (int) Math.min( heightSize, widthSize / aspectRatio );
+				measuredHeight = (int) Math.min(heightSize, widthSize / aspectRatio);
 				measuredWidth = (int) (measuredHeight * aspectRatio);
-
 			} else {
 				/* 
 				 * Possibility 4: Both width and height dynamic
 				 */
-				if ( widthSize > heightSize * aspectRatio ) {
+				if (widthSize > heightSize * aspectRatio) {
 					measuredHeight = heightSize;
-					measuredWidth = (int)( measuredHeight * aspectRatio );
+					measuredWidth = (int) (measuredHeight * aspectRatio);
 				} else {
 					measuredWidth = widthSize;
 					measuredHeight = (int) (measuredWidth / aspectRatio);
 				}
-
 			}
 		}
 
 		private Integer measuredWidth = null;
+
 		/**
 		 * Get the width measured in the latest call to <tt>measure()</tt>.
 		 */
 		public int getMeasuredWidth() {
-			if ( measuredWidth == null ) {
-				throw new IllegalStateException( "You need to run measure() before trying to get measured dimensions" );
+			if (measuredWidth == null) {
+				throw new IllegalStateException("You need to run measure() before trying to get measured dimensions");
 			}
 			return measuredWidth;
 		}
 
 		private Integer measuredHeight = null;
+
 		/**
 		 * Get the height measured in the latest call to <tt>measure()</tt>.
 		 */
 		public int getMeasuredHeight() {
-			if ( measuredHeight == null ) {
-				throw new IllegalStateException( "You need to run measure() before trying to get measured dimensions" );
+			if (measuredHeight == null) {
+				throw new IllegalStateException("You need to run measure() before trying to get measured dimensions");
 			}
 			return measuredHeight;
 		}
-
 	}
-
 }

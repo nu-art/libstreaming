@@ -59,4 +59,5 @@ android {
 
 dependencies {
     compile project(':module-manager')
+    compile project(path: ':cyborg-core')
 }
