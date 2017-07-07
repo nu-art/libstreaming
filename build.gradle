@@ -58,6 +58,5 @@ android {
 }
 
 dependencies {
-    compile project(':module-manager')
-    compile project(path: ':cyborg-core')
+    compile "com.nu-art-software.cyborg:cyborg-core:0.8.3"
 }
