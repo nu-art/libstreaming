@@ -58,5 +58,5 @@ android {
 }
 
 dependencies {
-    compile "com.nu-art-software.cyborg:cyborg-core:0.8.3"
+    compile "com.nu-art-software.cyborg:cyborg-core:${DEFAULT_DEPENDENCY_VERSION}"
 }
