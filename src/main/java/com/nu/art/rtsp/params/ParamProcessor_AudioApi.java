@@ -12,6 +12,7 @@ class ParamProcessor_AudioApi
 
 	@Override
 	public void processParam(String paramValue, SessionBuilder builder) {
+		byte audioApi;
 		switch (paramValue.toLowerCase()) {
 			case "mr":
 				audioApi = MediaStream.MODE_MEDIARECORDER_API;
@@ -21,5 +22,7 @@ class ParamProcessor_AudioApi
 			default:
 				audioApi = MediaStream.MODE_MEDIACODEC_API;
 		}
+
+		builder.setAudioApi(audioApi);
 	}
 }

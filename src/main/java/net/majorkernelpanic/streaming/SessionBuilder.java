@@ -96,6 +96,10 @@ public class SessionBuilder {
 
 	private Session.Callback mCallback = null;
 
+	private byte videoApi;
+
+	private byte audioApi;
+
 	// Removes the default public constructor
 	private SessionBuilder() {}
 
@@ -166,12 +170,16 @@ public class SessionBuilder {
 			video.setSurfaceView(mSurfaceView);
 			video.setPreviewOrientation(mOrientation);
 			video.setDestinationPorts(5006);
+			if(videoApi >0)
+				video.setStreamingMethod(videoApi);
 		}
 
 		if (session.getAudioTrack() != null) {
 			AudioStream audio = session.getAudioTrack();
 			audio.setAudioQuality(mAudioQuality);
 			audio.setDestinationPorts(5004);
+			if(audioApi >0)
+				audio.setStreamingMethod(audioApi);
 		}
 
 		return session;
@@ -289,5 +297,17 @@ public class SessionBuilder {
 		return new SessionBuilder().setDestination(mDestination).setSurfaceView(mSurfaceView).setPreviewOrientation(mOrientation)
 				.setVideoQuality(mVideoQuality).setVideoEncoder(mVideoEncoder).setFlashEnabled(mFlash).setCamera(mCamera).setTimeToLive(mTimeToLive)
 				.setAudioEncoder(mAudioEncoder).setAudioQuality(mAudioQuality).setContext(mContext).setCallback(mCallback);
+	}
+
+	public void setVideoApi(byte videoApi) {
+		this.videoApi = videoApi;
+	}
+
+	public void setAudioApi(byte audioApi) {
+		this.audioApi = audioApi;
+	}
+
+	public byte getAudioApi() {
+		return audioApi;
 	}
 }

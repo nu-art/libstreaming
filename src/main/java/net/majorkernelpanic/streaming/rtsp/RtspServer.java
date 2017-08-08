@@ -25,6 +25,7 @@ import android.content.SharedPreferences.Editor;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Binder;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.util.Base64;
 import android.util.Log;
 
@@ -38,11 +39,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.URI;
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Locale;
@@ -366,6 +370,30 @@ public class RtspServer
 			}
 		}
 	}
+	@NonNull
+	private static HashMap<String, String> extractQueryParams(String uri)
+			throws UnsupportedEncodingException {
+		String query = URI.create(uri).getQuery();
+		if (query == null)
+			throw new IllegalStateException("no query params specified");
+
+		String[] queryParams = query.split("&");
+		if (queryParams.length == 0)
+			throw new IllegalStateException("no query params specified");
+
+		HashMap<String, String> params = new HashMap<>();
+		for (String param : queryParams) {
+			String[] keyValue = param.split("=");
+			if (keyValue.length == 1)
+				continue;
+
+			params.put(
+					URLEncoder.encode(keyValue[0], "UTF-8").toLowerCase(), // Name
+					URLEncoder.encode(keyValue[1], "UTF-8").toLowerCase()  // Value
+			);
+		}
+		return params;
+	}
 
 	/**
 	 * By default the RTSP uses {@link UriParser} to parse the URI requested by the client
@@ -378,7 +406,9 @@ public class RtspServer
 	 */
 	protected Session handleRequest(String uri, Socket client)
 			throws IllegalStateException, IOException {
-		Session session = UriParser.parse(uri);
+		HashMap<String, String> params = extractQueryParams(uri);
+
+		Session session = UriParser.parse(params);
 		session.setOrigin(client.getLocalAddress().getHostAddress());
 		if (session.getDestination() == null) {
 			session.setDestination(client.getInetAddress().getHostAddress());

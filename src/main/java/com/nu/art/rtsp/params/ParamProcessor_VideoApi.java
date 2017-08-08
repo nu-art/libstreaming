@@ -12,6 +12,7 @@ class ParamProcessor_VideoApi
 
 	@Override
 	public void processParam(String paramValue, SessionBuilder builder) {
+		byte videoApi;
 		switch (paramValue) {
 			case "mr":
 				videoApi = MediaStream.MODE_MEDIARECORDER_API;
@@ -21,5 +22,6 @@ class ParamProcessor_VideoApi
 			default:
 				videoApi = MediaStream.MODE_MEDIACODEC_API;
 		}
+		builder.setVideoApi(videoApi);
 	}
 }

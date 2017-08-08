@@ -145,7 +145,7 @@ public class RTSPServer
 			addRTSPClient(this);
 			while (!Thread.interrupted()) {
 				Request request = new Request();
-				Response response = new Response(request);
+				Response response = new Response();
 
 				try {
 					Request.parseRequest(request, inputStream);
@@ -242,6 +242,11 @@ public class RTSPServer
 
 			p = Pattern.compile("trackID=(\\w+)", Pattern.CASE_INSENSITIVE);
 			m = p.matcher(request.uri);
+
+			String cseqHeader = request.headers.get("cseq");
+			response.addHeader("Cseq", cseqHeader);
+			response.addHeader("Server", serverName);
+
 
 			if (!m.find()) {
 				response.setResponseCode(ResponseCode.BadRequest);
