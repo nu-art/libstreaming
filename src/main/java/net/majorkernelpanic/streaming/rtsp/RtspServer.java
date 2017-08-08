@@ -32,8 +32,12 @@ import android.util.Log;
 import com.nu.art.core.generics.Processor;
 import com.nu.art.cyborg.core.CyborgBuilder;
 import com.nu.art.cyborg.core.CyborgServiceBase;
+import com.nu.art.rtsp.RTSPModule;
+import com.nu.art.rtsp.params.ParamProcessor_Base;
+import com.nu.art.rtsp.params.RTSPParams;
 
 import net.majorkernelpanic.streaming.Session;
+import net.majorkernelpanic.streaming.SessionBuilder;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -53,6 +57,9 @@ import java.util.Locale;
 import java.util.WeakHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static net.majorkernelpanic.streaming.SessionBuilder.AUDIO_NONE;
+import static net.majorkernelpanic.streaming.SessionBuilder.VIDEO_NONE;
 
 /**
  * Implementation of a subset of the RTSP protocol (RFC 2326).
@@ -395,20 +402,37 @@ public class RtspServer
 		return params;
 	}
 
-	/**
-	 * By default the RTSP uses {@link UriParser} to parse the URI requested by the client
-	 * but you can change that behavior by override this method.
-	 *
-	 * @param uri    The uri that the client has requested
-	 * @param client The socket associated to the client
-	 *
-	 * @return A proper session
-	 */
 	protected Session handleRequest(String uri, Socket client)
 			throws IllegalStateException, IOException {
 		HashMap<String, String> params = extractQueryParams(uri);
 
-		Session session = UriParser.parse(params);
+		SessionBuilder builder = SessionBuilder.getInstance().clone();
+		builder.setAudioEncoder(AUDIO_NONE).setVideoEncoder(VIDEO_NONE);
+		// Those parameters must be parsed first or else they won't necessarily be taken into account
+		for (String paramName : params.keySet()) {
+			String paramValue = params.get(paramName);
+			if (paramValue == null)
+				continue;
+
+			RTSPParams byKey = RTSPParams.getByKey(paramName);
+			if (byKey == null) {
+				//				logError("Unidentified param: " + paramName + ", with value: " + paramValue);
+				continue;
+			}
+
+			Class<? extends ParamProcessor_Base> paramProcessorType = byKey.paramProcessorType;
+			ParamProcessor_Base rtspParamProcessor = CyborgBuilder.getModule(RTSPModule.class).getRtspParamProcessor(paramProcessorType);
+			rtspParamProcessor.processParam(paramValue, builder);
+		}
+
+		//			.. need to figure out what the fuck this is for??
+		if (builder.getVideoEncoder() == VIDEO_NONE && builder.getAudioEncoder() == AUDIO_NONE) {
+			SessionBuilder b = SessionBuilder.getInstance();
+			builder.setVideoEncoder(b.getVideoEncoder());
+			builder.setAudioEncoder(b.getAudioEncoder());
+		}
+
+		Session session = builder.build();
 		session.setOrigin(client.getLocalAddress().getHostAddress());
 		if (session.getDestination() == null) {
 			session.setDestination(client.getInetAddress().getHostAddress());

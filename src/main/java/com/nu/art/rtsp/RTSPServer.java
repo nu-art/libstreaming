@@ -9,11 +9,12 @@ import com.nu.art.cyborg.core.CyborgBuilder;
 import com.nu.art.modular.core.ModuleItem;
 import com.nu.art.rtsp.RTSPModule.RTSPServerBuilder;
 import com.nu.art.rtsp.Response.ResponseCode;
+import com.nu.art.rtsp.params.ParamProcessor_Base;
+import com.nu.art.rtsp.params.RTSPParams;
 
 import net.majorkernelpanic.streaming.Session;
 import net.majorkernelpanic.streaming.SessionBuilder;
 import net.majorkernelpanic.streaming.rtsp.RtspServer.OnRtspSessionListener;
-import net.majorkernelpanic.streaming.rtsp.UriParser;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -31,14 +32,19 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.nu.art.rtsp.Response.ResponseCode.NotAllowed;
+import static net.majorkernelpanic.streaming.SessionBuilder.AUDIO_NONE;
+import static net.majorkernelpanic.streaming.SessionBuilder.VIDEO_NONE;
 
 public class RTSPServer
 		extends ModuleItem
 		implements Runnable {
 
-	private final RTSPServerBuilder builder;
+	private RTSPServerBuilder builder;
 
-	RTSPServer(RTSPServerBuilder builder) {
+	RTSPServer() {
+	}
+
+	final void setBuilder(RTSPServerBuilder builder) {
 		this.builder = builder;
 	}
 
@@ -67,14 +73,28 @@ public class RTSPServer
 	@Override
 	public void run() {
 		try {
+			logInfo("Starting...");
 			serverSocket = new ServerSocket(builder.port);
-			while (serverThread == null) {
+		} catch (IOException e) {
+			logError("Error Starting Server: " + builder.serverName, e);
+		}
+
+		try {
+			while (serverThread != null) {
+				logInfo("Waiting for client");
 				Socket clientSocket = serverSocket.accept();
+
+				logInfo("Connecting client");
 				new RTSPClient(clientSocket);
 			}
-			serverSocket.close();
 		} catch (IOException e) {
-			logError("Error Starting Server: " + builder.serverName);
+			logError("Error connecting to client: " + builder.serverName, e);
+		} finally {
+			try {
+				serverSocket.close();
+			} catch (IOException e) {
+				logError("Error closing server socket", e);
+			}
 		}
 	}
 
@@ -91,6 +111,11 @@ public class RTSPServer
 
 	public final void stop() {
 		serverThread = null;
+		try {
+			serverSocket.close();
+		} catch (IOException e) {
+			logError("Error closing server socket", e);
+		}
 	}
 
 	class RTSPClient
@@ -140,8 +165,10 @@ public class RTSPServer
 						response.setResponseCode(ResponseCode.InternalServerError);
 					}
 				} catch (IOException e) {
+					logError("IO Error while processing the request", e);
 					break;
 				} catch (Exception e) {
+					logError("Error processing the request", e);
 					response.setResponseCode(ResponseCode.BadRequest);
 				}
 
@@ -278,7 +305,33 @@ public class RTSPServer
 				throws IOException {
 			HashMap<String, String> params = extractQueryParams(request.uri);
 
-			session = UriParser.parse(params);
+			SessionBuilder builder = SessionBuilder.getInstance().clone();
+			builder.setAudioEncoder(AUDIO_NONE).setVideoEncoder(VIDEO_NONE);
+			// Those parameters must be parsed first or else they won't necessarily be taken into account
+			for (String paramName : params.keySet()) {
+				String paramValue = params.get(paramName);
+				if (paramValue == null)
+					continue;
+
+				RTSPParams byKey = RTSPParams.getByKey(paramName);
+				if (byKey == null) {
+					//				logError("Unidentified param: " + paramName + ", with value: " + paramValue);
+					continue;
+				}
+
+				Class<? extends ParamProcessor_Base> paramProcessorType = byKey.paramProcessorType;
+				ParamProcessor_Base rtspParamProcessor = CyborgBuilder.getModule(RTSPModule.class).getRtspParamProcessor(paramProcessorType);
+				rtspParamProcessor.processParam(paramValue, builder);
+			}
+
+			//			.. need to figure out what the fuck this is for??
+			if (builder.getVideoEncoder() == VIDEO_NONE && builder.getAudioEncoder() == AUDIO_NONE) {
+				SessionBuilder b = SessionBuilder.getInstance();
+				builder.setVideoEncoder(b.getVideoEncoder());
+				builder.setAudioEncoder(b.getAudioEncoder());
+			}
+
+			session = builder.build();
 			session.setOrigin(localHostAddress);
 			if (session.getDestination() == null) {
 				session.setDestination(remoteHostAddress);
@@ -324,7 +377,7 @@ public class RTSPServer
 
 	private void removeRTSPClient(final RTSPClient client) {
 		clients.remove(client);
-		dispatchModuleEvent("On client connected: " + client, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
+		dispatchModuleEvent("On client disconnected: " + client, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
 			@Override
 			public void process(RTSPServerEventsListener listener) {
 				listener.onClientDisconnected(client);
@@ -335,15 +388,16 @@ public class RTSPServer
 	@NonNull
 	private static HashMap<String, String> extractQueryParams(String uri)
 			throws UnsupportedEncodingException {
+		HashMap<String, String> params = new HashMap<>();
+
 		String query = URI.create(uri).getQuery();
 		if (query == null)
-			throw new IllegalStateException("no query params specified");
+			return params;
 
 		String[] queryParams = query.split("&");
 		if (queryParams.length == 0)
 			throw new IllegalStateException("no query params specified");
 
-		HashMap<String, String> params = new HashMap<>();
 		for (String param : queryParams) {
 			String[] keyValue = param.split("=");
 			if (keyValue.length == 1)

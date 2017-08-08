@@ -95,7 +95,8 @@ public class RTSPModule
 		}
 
 		public final RTSPServer build() {
-			RTSPServer rtspServer = new RTSPServer(this);
+			RTSPServer rtspServer = createModuleItem(RTSPServer.class);
+			rtspServer.setBuilder(this);
 			rtspServer.start();
 			return rtspServer;
 		}
