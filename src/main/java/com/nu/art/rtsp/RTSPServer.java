@@ -7,9 +7,11 @@ import com.nu.art.core.exceptions.runtime.BadImplementationException;
 import com.nu.art.core.generics.Processor;
 import com.nu.art.cyborg.core.CyborgBuilder;
 import com.nu.art.modular.core.ModuleItem;
+import com.nu.art.rtsp.RTSPModule.RTSPServerBuilder;
 import com.nu.art.rtsp.Response.ResponseCode;
 
 import net.majorkernelpanic.streaming.Session;
+import net.majorkernelpanic.streaming.SessionBuilder;
 import net.majorkernelpanic.streaming.rtsp.RtspServer.OnRtspSessionListener;
 import net.majorkernelpanic.streaming.rtsp.UriParser;
 
@@ -34,6 +36,12 @@ public class RTSPServer
 		extends ModuleItem
 		implements Runnable {
 
+	private final RTSPServerBuilder builder;
+
+	RTSPServer(RTSPServerBuilder builder) {
+		this.builder = builder;
+	}
+
 	@Override
 	protected void init() {
 
@@ -48,63 +56,40 @@ public class RTSPServer
 
 	private final ArrayList<RTSPClient> clients = new ArrayList<>();
 
-	private String serverName = "unnamed";
-
-	private int port;
-
-	private String userName;
-
-	private String password;
-
 	private ServerSocket serverSocket;
 
 	private Thread serverThread;
 
-	public RTSPServer setServerName(String serverName) {
-		this.serverName = serverName;
-		return this;
-	}
-
-	public RTSPServer setPassword(String password) {
-		this.password = password;
-		return this;
-	}
-
-	public RTSPServer setPort(int port) {
-		this.port = port;
-		return this;
-	}
-
-	public RTSPServer setUserName(String userName) {
-		this.userName = userName;
-		return this;
+	public boolean isStreaming() {
+		return clients.size() > 0;
 	}
 
 	@Override
 	public void run() {
 		try {
-			serverSocket = new ServerSocket(port);
+			serverSocket = new ServerSocket(builder.port);
 			while (serverThread == null) {
 				Socket clientSocket = serverSocket.accept();
 				new RTSPClient(clientSocket);
 			}
 			serverSocket.close();
 		} catch (IOException e) {
-
+			logError("Error Starting Server: " + builder.serverName);
 		}
 	}
 
-	final void start()
-			throws IOException {
+	final void start() {
 		if (serverThread != null || serverSocket != null)
 			throw new BadImplementationException("RTSP Server instances are for a single use, create another instance with same configuration!!");
 
-		serverThread = new Thread(this, "RTSP-" + serverName);
+		SessionBuilder.getInstance().setSurfaceView(builder.cameraSurface).setPreviewOrientation(builder.orientation).setAudioEncoder(builder.audioEncoder)
+				.setVideoEncoder(builder.videoEncoder);
+
+		serverThread = new Thread(this, "RTSP-" + builder.serverName);
 		serverThread.start();
 	}
 
-	final void stop()
-			throws IOException {
+	public final void stop() {
 		serverThread = null;
 	}
 
@@ -173,10 +158,6 @@ public class RTSPServer
 				throws IOException {
 
 			//Ask for authorization unless this is an OPTIONS request
-											/* ********************************************************************************** */
-								/* ********************************* Method OPTIONS ********************************* */
-								/* ********************************************************************************** */
-
 			switch (request.method.toLowerCase()) {
 				case "options":
 					options(response);
@@ -212,7 +193,7 @@ public class RTSPServer
 		}
 
 		private boolean isAuthorized(Request request) {
-			if (userName == null || password == null)
+			if (builder.userName == null || builder.password == null)
 				return true;
 
 			String authorizationHeader = request.headers.get("authorization");
@@ -220,14 +201,14 @@ public class RTSPServer
 				return false;
 
 			authorizationHeader = authorizationHeader.substring(authorizationHeader.lastIndexOf(" ") + 1);
-			String localEncoded = Base64.encodeToString((userName + ":" + password).getBytes(), Base64.NO_WRAP);
+			String localEncoded = Base64.encodeToString((builder.userName + ":" + builder.password).getBytes(), Base64.NO_WRAP);
 
 			return localEncoded.equals(authorizationHeader);
 		}
 
 		private void unauthorized(Response response) {
 			response.setResponseCode(ResponseCode.Unauthorized);
-			response.addHeader("WWW-Authenticate", "Basic realm=\"" + serverName + "\"");
+			response.addHeader("WWW-Authenticate", "Basic realm=\"" + builder.serverName + "\"");
 		}
 
 		private void options(Response response) {response.addHeader("Public", "DESCRIBE,SETUP,TEARDOWN,PLAY,PAUSE");}
@@ -245,8 +226,7 @@ public class RTSPServer
 
 			String cseqHeader = request.headers.get("cseq");
 			response.addHeader("Cseq", cseqHeader);
-			response.addHeader("Server", serverName);
-
+			response.addHeader("Server", builder.serverName);
 
 			if (!m.find()) {
 				response.setResponseCode(ResponseCode.BadRequest);

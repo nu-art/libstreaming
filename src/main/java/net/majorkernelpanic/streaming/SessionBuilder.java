@@ -18,9 +18,7 @@
 
 package net.majorkernelpanic.streaming;
 
-import android.content.Context;
 import android.hardware.Camera.CameraInfo;
-import android.preference.PreferenceManager;
 
 import net.majorkernelpanic.streaming.audio.AACStream;
 import net.majorkernelpanic.streaming.audio.AMRNBStream;
@@ -75,8 +73,6 @@ public class SessionBuilder {
 	private VideoQuality mVideoQuality = VideoQuality.DEFAULT_VIDEO_QUALITY;
 
 	private AudioQuality mAudioQuality = AudioQuality.DEFAULT_AUDIO_QUALITY;
-
-	private Context mContext;
 
 	private int mVideoEncoder = VIDEO_H263;
 
@@ -141,8 +137,6 @@ public class SessionBuilder {
 			case AUDIO_AAC:
 				AACStream stream = new AACStream();
 				session.addAudioTrack(stream);
-				if (mContext != null)
-					stream.setPreferences(PreferenceManager.getDefaultSharedPreferences(mContext));
 				break;
 
 			case AUDIO_AMRNB:
@@ -157,8 +151,6 @@ public class SessionBuilder {
 
 			case VIDEO_H264:
 				H264Stream stream = new H264Stream(mCamera);
-				if (mContext != null)
-					stream.setPreferences(PreferenceManager.getDefaultSharedPreferences(mContext));
 				session.addVideoTrack(stream);
 				break;
 		}
@@ -170,7 +162,7 @@ public class SessionBuilder {
 			video.setSurfaceView(mSurfaceView);
 			video.setPreviewOrientation(mOrientation);
 			video.setDestinationPorts(5006);
-			if(videoApi >0)
+			if (videoApi > 0)
 				video.setStreamingMethod(videoApi);
 		}
 
@@ -178,20 +170,11 @@ public class SessionBuilder {
 			AudioStream audio = session.getAudioTrack();
 			audio.setAudioQuality(mAudioQuality);
 			audio.setDestinationPorts(5004);
-			if(audioApi >0)
+			if (audioApi > 0)
 				audio.setStreamingMethod(audioApi);
 		}
 
 		return session;
-	}
-
-	/**
-	 * Access to the context is needed for the H264Stream class to store some stuff in the SharedPreferences.
-	 * Note that you should pass the Application context, not the context of an Activity.
-	 **/
-	public SessionBuilder setContext(Context context) {
-		mContext = context;
-		return this;
 	}
 
 	/**
@@ -294,9 +277,9 @@ public class SessionBuilder {
 	}
 
 	public SessionBuilder clone() {
-		return new SessionBuilder().setDestination(mDestination).setSurfaceView(mSurfaceView).setPreviewOrientation(mOrientation)
-				.setVideoQuality(mVideoQuality).setVideoEncoder(mVideoEncoder).setFlashEnabled(mFlash).setCamera(mCamera).setTimeToLive(mTimeToLive)
-				.setAudioEncoder(mAudioEncoder).setAudioQuality(mAudioQuality).setContext(mContext).setCallback(mCallback);
+		return new SessionBuilder().setDestination(mDestination).setSurfaceView(mSurfaceView).setPreviewOrientation(mOrientation).setVideoQuality(mVideoQuality)
+				.setVideoEncoder(mVideoEncoder).setFlashEnabled(mFlash).setCamera(mCamera).setTimeToLive(mTimeToLive).setAudioEncoder(mAudioEncoder)
+				.setAudioQuality(mAudioQuality).setCallback(mCallback);
 	}
 
 	public void setVideoApi(byte videoApi) {
