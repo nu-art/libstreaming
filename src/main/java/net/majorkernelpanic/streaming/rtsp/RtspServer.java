@@ -380,15 +380,15 @@ public class RtspServer
 	@NonNull
 	private static HashMap<String, String> extractQueryParams(String uri)
 			throws UnsupportedEncodingException {
+		HashMap<String, String> params = new HashMap<>();
 		String query = URI.create(uri).getQuery();
 		if (query == null)
-			throw new IllegalStateException("no query params specified");
+			return params;
 
 		String[] queryParams = query.split("&");
 		if (queryParams.length == 0)
 			throw new IllegalStateException("no query params specified");
 
-		HashMap<String, String> params = new HashMap<>();
 		for (String param : queryParams) {
 			String[] keyValue = param.split("=");
 			if (keyValue.length == 1)

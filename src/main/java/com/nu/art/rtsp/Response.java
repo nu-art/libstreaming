@@ -1,6 +1,6 @@
 package com.nu.art.rtsp;
 
-import com.nu.art.core.tools.ArrayTools;
+import com.nu.art.belog.Logger;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -29,27 +29,35 @@ public class Response {
 
 	}
 
-	public static final String[] EmptyHeaders = {};
+	public final void log(Logger logger) {
+		logger.logInfo("+-------------------- Response ---------------------+");
+		logger.logInfo("+---- Response Code: " + responseCode);
+		logger.logInfo("+---- Body: " + body);
+		if (headers.size() > 0) {
+			logger.logDebug("+---- Headers: ");
+			for (String key : headers.keySet()) {
+				logger.logDebug("+------ " + key + " <> " + headers.get(key));
+			}
+		}
+		logger.logInfo("+--------------------------------------------------+");
+	}
 
 	// Status code definitions
 	private ResponseCode responseCode = ResponseCode.Ok;
 
-	public String content = "";
+	public String body = "";
 
-	private HashMap<String, String[]> headers = new HashMap<>();
+	private HashMap<String, String> headers = new HashMap<>();
 
-	public final void addHeader(String key, String value) {
-		String[] headers = getHeaders(key);
-		setHeaders(key, ArrayTools.appendElement(headers, value));
-	}
+	final void addHeader(String key, String value) {
+		String headerValue = headers.get(key);
+		if (headerValue == null)
+			headerValue = "";
+		else
+			headerValue += ";";
 
-	private void setHeaders(String key, String[] values) {
-		headers.put(key, values);
-	}
-
-	private String[] getHeaders(String key) {
-		String[] values = headers.get(key);
-		return values == null ? EmptyHeaders : values;
+		headerValue += value;
+		headers.put(key, headerValue);
 	}
 
 	@SuppressWarnings("StringBufferReplaceableByString")
@@ -57,7 +65,10 @@ public class Response {
 			throws IOException {
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append("RTSP/1.0 ").append(responseCode.responseCode).append(" ").append(responseCode.responseMessage).append("\r\n");
-		stringBuilder.append("Content-Length: ").append(content.length()).append("\r\n");
+		stringBuilder.append("Content-Length: ").append(body.length()).append("\r\n");
+		for (String key : headers.keySet()) {
+			stringBuilder.append(key).append(": ").append(headers.get(key)).append("\r\n");
+		}
 
 		String response = stringBuilder.toString();
 		output.write(response.getBytes());

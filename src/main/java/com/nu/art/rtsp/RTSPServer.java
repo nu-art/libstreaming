@@ -349,7 +349,7 @@ public class RTSPServer
 			String requestContent = session.getSessionDescription();
 			response.addHeader("Content-Base", remoteHostAddress + ":" + localPort + "/");
 			response.addHeader("Content-Type", "application/sdp");
-			response.content = requestContent;
+			response.body = requestContent;
 		}
 
 		private void play(Response response) {

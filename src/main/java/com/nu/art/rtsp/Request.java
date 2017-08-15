@@ -1,5 +1,6 @@
 package com.nu.art.rtsp;
 
+import com.nu.art.belog.Logger;
 import com.nu.art.core.utils.RegexAnalyzer;
 
 import java.io.BufferedReader;
@@ -20,6 +21,19 @@ public class Request {
 	public String uri;
 
 	public HashMap<String, String> headers = new HashMap<>();
+
+	public final void log(Logger logger) {
+		logger.logInfo("+-------------------- Request ---------------------+");
+		logger.logInfo("+---- URL: " + uri);
+		logger.logInfo("+---- Method: " + method);
+		if (headers.size() > 0) {
+			logger.logInfo("+---- Headers: ");
+			for (String key : headers.keySet()) {
+				logger.logInfo("+------ " + key + " <> " + headers.get(key));
+			}
+		}
+		logger.logInfo("+--------------------------------------------------+");
+	}
 
 	/**
 	 * Parse the method, uri & headers of a RTSP request
