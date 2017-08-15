@@ -1,8 +1,8 @@
 package com.nu.art.rtsp;
 
-import com.nu.art.core.utils.GenericMap;
 import com.nu.art.cyborg.core.CyborgModule;
 import com.nu.art.reflection.tools.ReflectiveTools;
+import com.nu.art.reflection.utils.GenericMap;
 import com.nu.art.rtsp.params.ParamProcessor_Base;
 
 import net.majorkernelpanic.streaming.gl.SurfaceView;
