@@ -3,6 +3,7 @@ package com.nu.art.rtsp;
 import android.support.annotation.NonNull;
 import android.util.Base64;
 
+import com.nu.art.belog.Logger;
 import com.nu.art.core.exceptions.runtime.BadImplementationException;
 import com.nu.art.core.generics.Processor;
 import com.nu.art.cyborg.core.CyborgBuilder;
@@ -102,8 +103,11 @@ public class RTSPServer
 		if (serverThread != null || serverSocket != null)
 			throw new BadImplementationException("RTSP Server instances are for a single use, create another instance with same configuration!!");
 
-		SessionBuilder.getInstance().setSurfaceView(builder.cameraSurface).setPreviewOrientation(builder.orientation).setAudioEncoder(builder.audioEncoder)
-				.setVideoEncoder(builder.videoEncoder);
+		SessionBuilder.getInstance()
+									.setSurfaceView(builder.cameraSurface)
+									.setPreviewOrientation(builder.orientation)
+									.setAudioEncoder(builder.audioEncoder)
+									.setVideoEncoder(builder.videoEncoder);
 
 		serverThread = new Thread(this, "RTSP-" + builder.serverName);
 		serverThread.start();
@@ -118,7 +122,8 @@ public class RTSPServer
 		}
 	}
 
-	class RTSPClient
+	private class RTSPClient
+			extends Logger
 			implements Runnable {
 
 		private final String remoteHostAddress;
@@ -126,8 +131,6 @@ public class RTSPServer
 		private final String localHostAddress;
 
 		private final int localPort;
-
-		private final Socket clientSocket;
 
 		private final BufferedReader inputStream;
 
@@ -139,8 +142,6 @@ public class RTSPServer
 
 		RTSPClient(Socket clientSocket)
 				throws IOException {
-			this.clientSocket = clientSocket;
-
 			inputStream = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 			outputStream = clientSocket.getOutputStream();
 			remoteHostAddress = clientSocket.getInetAddress().getHostAddress();
@@ -159,6 +160,7 @@ public class RTSPServer
 
 				try {
 					Request.parseRequest(request, inputStream);
+					request.log(this);
 					try {
 						processRequest(request, response);
 					} catch (IOException e) {
@@ -173,7 +175,9 @@ public class RTSPServer
 				}
 
 				try {
-					response.send(outputStream);
+					response.log(this);
+					String realResponse = response.send(outputStream);
+					logWarning(realResponse);
 				} catch (Exception e) {
 					break;
 				}
@@ -183,6 +187,8 @@ public class RTSPServer
 
 		private void processRequest(Request request, Response response)
 				throws IOException {
+			String cseqHeader = request.headers.get("cseq");
+			response.addHeader("Cseq", cseqHeader);
 
 			//Ask for authorization unless this is an OPTIONS request
 			switch (request.method.toLowerCase()) {
@@ -251,8 +257,6 @@ public class RTSPServer
 			p = Pattern.compile("trackID=(\\w+)", Pattern.CASE_INSENSITIVE);
 			m = p.matcher(request.uri);
 
-			String cseqHeader = request.headers.get("cseq");
-			response.addHeader("Cseq", cseqHeader);
 			response.addHeader("Server", builder.serverName);
 
 			if (!m.find()) {

@@ -58,6 +58,7 @@ import java.util.WeakHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.nu.art.rtsp.Response.LineBreak;
 import static net.majorkernelpanic.streaming.SessionBuilder.AUDIO_NONE;
 import static net.majorkernelpanic.streaming.SessionBuilder.VIDEO_NONE;
 
@@ -377,6 +378,7 @@ public class RtspServer
 			}
 		}
 	}
+
 	@NonNull
 	private static HashMap<String, String> extractQueryParams(String uri)
 			throws UnsupportedEncodingException {
@@ -573,7 +575,7 @@ public class RtspServer
 
 			//Ask for authorization unless this is an OPTIONS request
 			if (!isAuthorized(request) && !request.method.equalsIgnoreCase("OPTIONS")) {
-				response.attributes = "WWW-Authenticate: Basic realm=\"" + serverName + "\"\r\n";
+				response.attributes = "WWW-Authenticate: Basic realm=\"" + serverName + "\"" + LineBreak;
 				response.status = Response.STATUS_UNAUTHORIZED;
 			} else {
 					/* ********************************************************************************** */
@@ -594,7 +596,7 @@ public class RtspServer
 
 					String requestContent = mSession.getSessionDescription();
 					String requestAttributes = "Content-Base: " + mClient.getLocalAddress()
-																															 .getHostAddress() + ":" + mClient.getLocalPort() + "/\r\n" + "Content-Type: application/sdp\r\n";
+																															 .getHostAddress() + ":" + mClient.getLocalPort() + "/" + LineBreak + "Content-Type: application/sdp" + LineBreak;
 
 					response.attributes = requestAttributes;
 					response.content = requestContent;
@@ -608,7 +610,7 @@ public class RtspServer
 								/* ********************************************************************************** */
 				else if (request.method.equalsIgnoreCase("OPTIONS")) {
 					response.status = Response.STATUS_OK;
-					response.attributes = "Public: DESCRIBE,SETUP,TEARDOWN,PLAY,PAUSE\r\n";
+					response.attributes = "Public: DESCRIBE,SETUP,TEARDOWN,PLAY,PAUSE" + LineBreak;
 					response.status = Response.STATUS_OK;
 				}
 
@@ -662,7 +664,7 @@ public class RtspServer
 
 					response.attributes = "Transport: RTP/AVP/UDP;" + (InetAddress.getByName(destination).isMulticastAddress() ? "multicast"
 																																																										 : "unicast") + ";destination=" + mSession.getDestination() + ";client_port=" + p1 + "-" + p2 + ";server_port=" + src[0] + "-" + src[1] + ";ssrc=" + Integer
-							.toHexString(ssrc) + ";mode=play\r\n" + "Session: " + "1185d20035702ca" + "\r\n" + "Cache-Control: no-cache\r\n";
+							.toHexString(ssrc) + ";mode=play" + LineBreak + "Session: " + "1185d20035702ca" + LineBreak + "Cache-Control: no-cache" + LineBreak;
 					response.status = Response.STATUS_OK;
 
 					// If no exception has been thrown, we reply with OK
@@ -678,7 +680,7 @@ public class RtspServer
 						requestAttributes += "url=rtsp://" + mClient.getLocalAddress().getHostAddress() + ":" + mClient.getLocalPort() + "/trackID=" + 0 + ";seq=0,";
 					if (mSession.trackExists(1))
 						requestAttributes += "url=rtsp://" + mClient.getLocalAddress().getHostAddress() + ":" + mClient.getLocalPort() + "/trackID=" + 1 + ";seq=0,";
-					requestAttributes = requestAttributes.substring(0, requestAttributes.length() - 1) + "\r\nSession: 1185d20035702ca\r\n";
+					requestAttributes = requestAttributes.substring(0, requestAttributes.length() - 1) + LineBreak + "Session: 1185d20035702ca" + LineBreak;
 
 					response.attributes = requestAttributes;
 
@@ -823,8 +825,8 @@ public class RtspServer
 			}
 
 			String serverName = RtspServer.serverName;
-			String response = "RTSP/1.0 " + status + "\r\n" + "Server: " + serverName + "\r\n" + (seqid >= 0 ? ("Cseq: " + seqid + "\r\n")
-																																																			 : "") + "Content-Length: " + content.length() + "\r\n" + attributes + "\r\n" + content;
+			String response = "RTSP/1.0 " + status + LineBreak + "Server: " + serverName + LineBreak + (seqid >= 0 ? ("Cseq: " + seqid + LineBreak)
+																																																						 : "") + "Content-Length: " + content.length() + LineBreak + attributes + LineBreak + content;
 
 			Log.d(TAG, response.replace("\r", ""));
 

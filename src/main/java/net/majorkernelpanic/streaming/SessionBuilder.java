@@ -277,9 +277,17 @@ public class SessionBuilder {
 	}
 
 	public SessionBuilder clone() {
-		return new SessionBuilder().setDestination(mDestination).setSurfaceView(mSurfaceView).setPreviewOrientation(mOrientation).setVideoQuality(mVideoQuality)
-				.setVideoEncoder(mVideoEncoder).setFlashEnabled(mFlash).setCamera(mCamera).setTimeToLive(mTimeToLive).setAudioEncoder(mAudioEncoder)
-				.setAudioQuality(mAudioQuality).setCallback(mCallback);
+		return new SessionBuilder().setDestination(mDestination)
+															 .setSurfaceView(mSurfaceView)
+															 .setPreviewOrientation(mOrientation)
+															 .setVideoQuality(mVideoQuality)
+															 .setVideoEncoder(mVideoEncoder)
+															 .setFlashEnabled(mFlash)
+															 .setCamera(mCamera)
+															 .setTimeToLive(mTimeToLive)
+															 .setAudioEncoder(mAudioEncoder)
+															 .setAudioQuality(mAudioQuality)
+															 .setCallback(mCallback);
 	}
 
 	public void setVideoApi(byte videoApi) {

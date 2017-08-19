@@ -20,8 +20,9 @@ package net.majorkernelpanic.streaming.exceptions;
 
 import java.io.IOException;
 
-public class StorageUnavailableException extends IOException {
-	
+public class StorageUnavailableException
+		extends IOException {
+
 	public StorageUnavailableException(String message) {
 		super(message);
 	}

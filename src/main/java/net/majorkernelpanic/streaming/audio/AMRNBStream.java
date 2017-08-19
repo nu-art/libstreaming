@@ -20,10 +20,14 @@ package net.majorkernelpanic.streaming.audio;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+
 import net.majorkernelpanic.streaming.SessionBuilder;
 import net.majorkernelpanic.streaming.rtp.AMRNBPacketizer;
+
 import android.media.MediaRecorder;
 import android.service.textservice.SpellCheckerService.Session;
+
+import static com.nu.art.rtsp.Response.LineBreak;
 
 /**
  * A class for streaming AAC from the camera of an android device using RTP.
@@ -32,7 +36,8 @@ import android.service.textservice.SpellCheckerService.Session;
  * to configure the stream. You can then call {@link #start()} to start the RTP stream.
  * Call {@link #stop()} to stop the stream.
  */
-public class AMRNBStream extends AudioStream {
+public class AMRNBStream
+		extends AudioStream {
 
 	public AMRNBStream() {
 		super();
@@ -40,7 +45,7 @@ public class AMRNBStream extends AudioStream {
 		mPacketizer = new AMRNBPacketizer();
 
 		setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
-		
+
 		try {
 			// RAW_AMR was deprecated in API level 16.
 			Field deprecatedName = MediaRecorder.OutputFormat.class.getField("RAW_AMR");
@@ -48,22 +53,23 @@ public class AMRNBStream extends AudioStream {
 		} catch (Exception e) {
 			setOutputFormat(MediaRecorder.OutputFormat.AMR_NB);
 		}
-		
+
 		setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-		
 	}
 
 	/**
 	 * Starts the stream.
 	 */
-	public synchronized void start() throws IllegalStateException, IOException {
+	public synchronized void start()
+			throws IllegalStateException, IOException {
 		if (!mStreaming) {
 			configure();
 			super.start();
 		}
 	}
 
-	public synchronized void configure() throws IllegalStateException, IOException {
+	public synchronized void configure()
+			throws IllegalStateException, IOException {
 		super.configure();
 		mMode = MODE_MEDIARECORDER_API;
 		mQuality = mRequestedQuality.clone();
@@ -71,16 +77,14 @@ public class AMRNBStream extends AudioStream {
 
 	/**
 	 * Returns a description of the stream using SDP. It can then be included in an SDP file.
-	 */	
+	 */
 	public String getSessionDescription() {
-		return "m=audio "+String.valueOf(getDestinationPorts()[0])+" RTP/AVP 96\r\n" +
-				"a=rtpmap:96 AMR/8000\r\n" +
-				"a=fmtp:96 octet-align=1;\r\n";
+		return "m=audio " + String.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 AMR/8000" + LineBreak + "a=fmtp:96 octet-align=1;" + LineBreak;
 	}
 
 	@Override
-	protected void encodeWithMediaCodec() throws IOException {
+	protected void encodeWithMediaCodec()
+			throws IOException {
 		super.encodeWithMediaRecorder();
 	}
-
 }

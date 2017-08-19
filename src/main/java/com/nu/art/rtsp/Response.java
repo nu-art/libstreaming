@@ -8,6 +8,8 @@ import java.util.HashMap;
 
 public class Response {
 
+	public static final String LineBreak = "\r\n";
+
 	enum ResponseCode {
 		Ok(200, "OK"),
 		BadRequest(400, "Bad Request"),
@@ -27,6 +29,10 @@ public class Response {
 			this.responseMessage = responseMessage;
 		}
 
+		@Override
+		public String toString() {
+			return responseCode + " " + responseMessage;
+		}
 	}
 
 	public final void log(Logger logger) {
@@ -61,17 +67,23 @@ public class Response {
 	}
 
 	@SuppressWarnings("StringBufferReplaceableByString")
-	public void send(OutputStream output)
+	public String send(OutputStream output)
 			throws IOException {
 		StringBuilder stringBuilder = new StringBuilder();
-		stringBuilder.append("RTSP/1.0 ").append(responseCode.responseCode).append(" ").append(responseCode.responseMessage).append("\r\n");
-		stringBuilder.append("Content-Length: ").append(body.length()).append("\r\n");
+		stringBuilder.append("RTSP/1.0 ").append(responseCode.responseCode).append(" ").append(responseCode.responseMessage).append(LineBreak);
+		stringBuilder.append("Content-Length: ").append(body.length()).append(LineBreak);
 		for (String key : headers.keySet()) {
-			stringBuilder.append(key).append(": ").append(headers.get(key)).append("\r\n");
+			stringBuilder.append(key).append(": ").append(headers.get(key)).append(LineBreak);
 		}
+
+		stringBuilder.append(LineBreak);
+		if (body != null)
+			stringBuilder.append(body);
 
 		String response = stringBuilder.toString();
 		output.write(response.getBytes());
+
+		return response;
 	}
 
 	void setResponseCode(ResponseCode responseCode) {

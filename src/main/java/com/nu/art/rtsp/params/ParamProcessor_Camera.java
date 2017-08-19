@@ -20,5 +20,6 @@ class ParamProcessor_Camera
 			case "front":
 			default:
 				builder.setCamera(CameraInfo.CAMERA_FACING_FRONT);
-		}	}
+		}
+	}
 }

@@ -23,25 +23,31 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import net.majorkernelpanic.streaming.MediaStream;
+
 import android.media.MediaRecorder;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
-/** 
+/**
  * Don't use this class directly.
  */
-public abstract class AudioStream  extends MediaStream {
+public abstract class AudioStream
+		extends MediaStream {
 
 	protected int mAudioSource;
+
 	protected int mOutputFormat;
+
 	protected int mAudioEncoder;
+
 	protected AudioQuality mRequestedQuality = AudioQuality.DEFAULT_AUDIO_QUALITY.clone();
+
 	protected AudioQuality mQuality = mRequestedQuality.clone();
-	
+
 	public AudioStream() {
 		setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
 	}
-	
+
 	public void setAudioSource(int audioSource) {
 		mAudioSource = audioSource;
 	}
@@ -49,30 +55,31 @@ public abstract class AudioStream  extends MediaStream {
 	public void setAudioQuality(AudioQuality quality) {
 		mRequestedQuality = quality;
 	}
-	
-	/** 
-	 * Returns the quality of the stream.  
+
+	/**
+	 * Returns the quality of the stream.
 	 */
 	public AudioQuality getAudioQuality() {
 		return mQuality;
-	}	
-	
+	}
+
 	protected void setAudioEncoder(int audioEncoder) {
 		mAudioEncoder = audioEncoder;
 	}
-	
+
 	protected void setOutputFormat(int outputFormat) {
 		mOutputFormat = outputFormat;
 	}
-	
+
 	@Override
-	protected void encodeWithMediaRecorder() throws IOException {
-		
+	protected void encodeWithMediaRecorder()
+			throws IOException {
+
 		// We need a local socket to forward data output by the camera to the packetizer
 		createSockets();
 
-		Log.v(TAG,"Requested audio with "+mQuality.bitRate/1000+"kbps"+" at "+mQuality.samplingRate/1000+"kHz");
-		
+		Log.v(TAG, "Requested audio with " + mQuality.bitRate / 1000 + "kbps" + " at " + mQuality.samplingRate / 1000 + "kHz");
+
 		mMediaRecorder = new MediaRecorder();
 		mMediaRecorder.setAudioSource(mAudioSource);
 		mMediaRecorder.setOutputFormat(mOutputFormat);
@@ -80,14 +87,14 @@ public abstract class AudioStream  extends MediaStream {
 		mMediaRecorder.setAudioChannels(1);
 		mMediaRecorder.setAudioSamplingRate(mQuality.samplingRate);
 		mMediaRecorder.setAudioEncodingBitRate(mQuality.bitRate);
-		
+
 		// We write the output of the camera in a local socket instead of a file !			
 		// This one little trick makes streaming feasible quiet simply: data from the camera
 		// can then be manipulated at the other end of the socket
 		FileDescriptor fd = null;
 		if (sPipeApi == PIPE_API_PFD) {
 			fd = mParcelWrite.getFileDescriptor();
-		} else  {
+		} else {
 			fd = mSender.getFileDescriptor();
 		}
 		mMediaRecorder.setOutputFile(fd);
@@ -97,10 +104,10 @@ public abstract class AudioStream  extends MediaStream {
 		mMediaRecorder.start();
 
 		InputStream is = null;
-		
+
 		if (sPipeApi == PIPE_API_PFD) {
 			is = new ParcelFileDescriptor.AutoCloseInputStream(mParcelRead);
-		} else  {
+		} else {
 			try {
 				// mReceiver.getInputStream contains the data from the camera
 				is = mReceiver.getInputStream();
@@ -114,7 +121,5 @@ public abstract class AudioStream  extends MediaStream {
 		mPacketizer.setInputStream(is);
 		mPacketizer.start();
 		mStreaming = true;
-		
 	}
-	
 }

@@ -23,16 +23,22 @@ import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 
-class RtcpDeinterleaver extends InputStream implements Runnable {
-	
+class RtcpDeinterleaver
+		extends InputStream
+		implements Runnable {
+
 	public final static String TAG = "RtcpDeinterleaver";
-	
+
 	private IOException mIOException;
+
 	private InputStream mInputStream;
+
 	private PipedInputStream mPipedInputStream;
+
 	private PipedOutputStream mPipedOutputStream;
+
 	private byte[] mBuffer;
-	
+
 	public RtcpDeinterleaver(InputStream inputStream) {
 		mInputStream = inputStream;
 		mPipedInputStream = new PipedInputStream(4096);
@@ -59,23 +65,26 @@ class RtcpDeinterleaver extends InputStream implements Runnable {
 	}
 
 	@Override
-	public int read(byte[] buffer) throws IOException {
+	public int read(byte[] buffer)
+			throws IOException {
 		if (mIOException != null) {
 			throw mIOException;
 		}
 		return mPipedInputStream.read(buffer);
-	}		
-	
+	}
+
 	@Override
-	public int read(byte[] buffer, int offset, int length) throws IOException {
+	public int read(byte[] buffer, int offset, int length)
+			throws IOException {
 		if (mIOException != null) {
 			throw mIOException;
 		}
 		return mPipedInputStream.read(buffer, offset, length);
-	}	
-	
+	}
+
 	@Override
-	public int read() throws IOException {
+	public int read()
+			throws IOException {
 		if (mIOException != null) {
 			throw mIOException;
 		}
@@ -83,8 +92,8 @@ class RtcpDeinterleaver extends InputStream implements Runnable {
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close()
+			throws IOException {
 		mInputStream.close();
 	}
-
 }

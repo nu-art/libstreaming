@@ -148,8 +148,7 @@ public class SurfaceView
 
 		mViewSurfaceManager = new SurfaceManager(getHolder().getSurface());
 		mViewSurfaceManager.makeCurrent();
-		mTextureManager.createTexture()
-									 .setOnFrameAvailableListener(this);
+		mTextureManager.createTexture().setOnFrameAvailableListener(this);
 
 		mLock.release();
 
@@ -170,8 +169,7 @@ public class SurfaceView
 							mCodecSurfaceManager.makeCurrent();
 							mTextureManager.drawFrame();
 							oldts = ts;
-							ts = mTextureManager.getSurfaceTexture()
-																	.getTimestamp();
+							ts = mTextureManager.getSurfaceTexture().getTimestamp();
 							//Log.d(TAG,"FPS: "+(1000000000/(ts-oldts)));
 							mCodecSurfaceManager.setPresentationTime(ts);
 							mCodecSurfaceManager.swapBuffer();
