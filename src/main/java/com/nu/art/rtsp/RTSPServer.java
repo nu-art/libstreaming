@@ -78,6 +78,7 @@ public class RTSPServer
 			serverSocket = new ServerSocket(builder.port);
 		} catch (IOException e) {
 			logError("Error Starting Server: " + builder.serverName, e);
+			return;
 		}
 
 		try {
