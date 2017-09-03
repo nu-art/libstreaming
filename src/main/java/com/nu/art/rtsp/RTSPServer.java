@@ -6,6 +6,7 @@ import android.util.Base64;
 import com.nu.art.belog.Logger;
 import com.nu.art.core.exceptions.runtime.BadImplementationException;
 import com.nu.art.core.generics.Processor;
+import com.nu.art.core.tools.ArrayTools;
 import com.nu.art.cyborg.core.CyborgBuilder;
 import com.nu.art.modular.core.ModuleItem;
 import com.nu.art.rtsp.RTSPModule.RTSPServerBuilder;
@@ -27,7 +28,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -61,14 +61,14 @@ public class RTSPServer
 		void onClientDisconnected(RTSPClient client);
 	}
 
-	private final ArrayList<RTSPClient> clients = new ArrayList<>();
+	private RTSPClient[] clients = {};
 
 	private ServerSocket serverSocket;
 
 	private Thread serverThread;
 
 	public boolean isStreaming() {
-		return clients.size() > 0;
+		return clients.length > 0;
 	}
 
 	@Override
@@ -104,11 +104,8 @@ public class RTSPServer
 		if (serverThread != null || serverSocket != null)
 			throw new BadImplementationException("RTSP Server instances are for a single use, create another instance with same configuration!!");
 
-		SessionBuilder.getInstance()
-									.setSurfaceView(builder.cameraSurface)
-									.setPreviewOrientation(builder.orientation)
-									.setAudioEncoder(builder.audioEncoder)
-									.setVideoEncoder(builder.videoEncoder);
+		SessionBuilder.getInstance().setSurfaceView(builder.cameraSurface).setPreviewOrientation(builder.orientation).setAudioEncoder(builder.audioEncoder)
+				.setVideoEncoder(builder.videoEncoder);
 
 		serverThread = new Thread(this, "RTSP-" + builder.serverName);
 		serverThread.start();
@@ -118,6 +115,9 @@ public class RTSPServer
 		serverThread = null;
 		try {
 			serverSocket.close();
+			for (RTSPClient client : clients) {
+				client.stop();
+			}
 		} catch (IOException e) {
 			logError("Error closing server socket", e);
 		}
@@ -137,13 +137,19 @@ public class RTSPServer
 
 		private final OutputStream outputStream;
 
+		private final Socket clientSocket;
+
+<<<<<<< Updated upstream
+=======
 		private Thread clientThread;
 
+>>>>>>> Stashed changes
 		private Session session;
 
 		RTSPClient(Socket clientSocket)
 				throws IOException {
 			inputStream = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+			this.clientSocket = clientSocket;
 			outputStream = clientSocket.getOutputStream();
 			remoteHostAddress = clientSocket.getInetAddress().getHostAddress();
 			localHostAddress = clientSocket.getLocalAddress().getHostAddress();
@@ -368,10 +374,19 @@ public class RTSPServer
 			response.addHeader("RTP-Info", value);
 			response.addHeader("Session", "1185d20035702ca");
 		}
+
+		private void stop() {
+			session.stop();
+			try {
+				clientSocket.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	private void addRTSPClient(final RTSPClient client) {
-		clients.add(client);
+		clients = ArrayTools.appendElement(clients, client);
 		dispatchModuleEvent("On client connected: " + client, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
 			@Override
 			public void process(RTSPServerEventsListener listener) {
@@ -381,7 +396,7 @@ public class RTSPServer
 	}
 
 	private void removeRTSPClient(final RTSPClient client) {
-		clients.remove(client);
+		clients = ArrayTools.removeElement(clients, client);
 		dispatchModuleEvent("On client disconnected: " + client, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
 			@Override
 			public void process(RTSPServerEventsListener listener) {
