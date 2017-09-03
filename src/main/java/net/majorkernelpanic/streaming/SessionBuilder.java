@@ -297,8 +297,4 @@ public class SessionBuilder {
 	public void setAudioApi(byte audioApi) {
 		this.audioApi = audioApi;
 	}
-
-	public byte getAudioApi() {
-		return audioApi;
-	}
 }
