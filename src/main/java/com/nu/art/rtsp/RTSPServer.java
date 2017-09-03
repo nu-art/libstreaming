@@ -139,17 +139,10 @@ public class RTSPServer
 
 		private final Socket clientSocket;
 
-<<<<<<< Updated upstream
-=======
 		private Thread clientThread;
 
-<<<<<<< HEAD
->>>>>>> Stashed changes
 		private Session session;
-=======
->>>>>>> 8f903bc320d0f38b18001a4fd58637174601ba1f
 
-		private Session session;
 		RTSPClient(Socket clientSocket)
 				throws IOException {
 			inputStream = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
