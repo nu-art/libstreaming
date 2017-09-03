@@ -63,7 +63,8 @@ public class AACStream
 	/**
 	 * MPEG-4 Audio Object Types supported by ADTS.
 	 **/
-	private static final String[] AUDIO_OBJECT_TYPES = {"NULL",
+	private static final String[] AUDIO_OBJECT_TYPES = {
+			"NULL",
 			// 0
 			"AAC Main",
 			// 1
@@ -78,7 +79,8 @@ public class AACStream
 	/**
 	 * There are 13 supported frequencies by ADTS.
 	 **/
-	public static final int[] AUDIO_SAMPLING_RATES = {96000,
+	public static final int[] AUDIO_SAMPLING_RATES = {
+			96000,
 			// 0
 			88200,
 			// 1
@@ -225,7 +227,8 @@ public class AACStream
 		super.encodeWithMediaRecorder();
 	}
 
-	@SuppressLint( {"InlinedApi",
+	@SuppressLint( {
+										 "InlinedApi",
 										 "NewApi"
 								 })
 	protected void encodeWithMediaCodec()
@@ -243,13 +246,13 @@ public class AACStream
 		format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, bufferSize);
 
 		mStreaming = true;
-		MediaCodec mediaCodec = MediaCodec.createEncoderByType("audio/mp4a-latm");
-		mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
-		mediaCodec.start();
-		mMediaCodecs = ArrayTools.appendElement(mMediaCodecs, mediaCodec);
+		mMediaCodec = MediaCodec.createEncoderByType("audio/mp4a-latm");
+		mMediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+		mMediaCodec.start();
+		mMediaCodecs = ArrayTools.appendElement(mMediaCodecs, mMediaCodec);
 
 		// The packetizer encapsulates this stream in an RTP stream and send it over the network
-		mPacketizer.setInputStream(new MediaCodecInputStream(mediaCodec));
+		mPacketizer.setInputStream(new MediaCodecInputStream(mMediaCodec));
 		mPacketizer.start();
 
 		if (mAudioRecord == null) {
@@ -298,14 +301,11 @@ public class AACStream
 
 	public synchronized void stop() {
 		if (mStreaming) {
+			mMediaCodecs = ArrayTools.removeElement(mMediaCodecs, mMediaCodec);
+			super.stop();
 			if (mMode == MODE_MEDIACODEC_API) {
 				Log.d(TAG, "Interrupting threads...");
-				mThread.interrupt();
-				mAudioRecord.stop();
-				mAudioRecord.release();
-				mAudioRecord = null;
 			}
-			super.stop();
 		}
 	}
 

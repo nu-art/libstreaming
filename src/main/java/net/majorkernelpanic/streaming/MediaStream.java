@@ -336,11 +336,8 @@ public abstract class MediaStream
 					mPacketizer.stop();
 				} else {
 					mPacketizer.stop();
-					for (MediaCodec mediaCodec : mMediaCodecs) {
-						mediaCodec.stop();
-						mediaCodec.release();
-					}
-					mMediaCodecs = new MediaCodec[0];
+					mMediaCodec.stop();
+					mMediaCodec.release();
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
