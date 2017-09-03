@@ -561,7 +561,7 @@ public abstract class VideoStream
 		mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
 		mMediaCodec.configure(mediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
 		Surface surface = mMediaCodec.createInputSurface();
-		((SurfaceView) mSurfaceView).addMediaCodecSurface(surface);
+		mSurfaceView.addMediaCodecSurface(surface);
 		mMediaCodec.start();
 
 		// The packetizer encapsulates the bit stream in an RTP stream and send it over the network

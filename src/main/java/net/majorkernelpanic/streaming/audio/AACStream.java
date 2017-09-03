@@ -114,19 +114,19 @@ public class AACStream
 			// 15
 	};
 
-	private String mSessionDescription = null;
+	private static String mSessionDescription = null;
 
 	private int mProfile, mSamplingRateIndex, mChannel, mConfig;
 
 	private SharedPreferences mSettings = null;
 
-	private AudioRecord mAudioRecord = null;
+	private static AudioRecord mAudioRecord;
 
-	private Thread mThread = null;
+	private static Thread mThread = null;
 
 	public AACStream() {
 		super();
-
+		mPacketizer = new AACLATMPacketizer();
 		if (!AACStreamingSupported()) {
 			Log.e(TAG, "AAC not supported on this phone");
 			throw new RuntimeException("AAC not supported by this phone !");
@@ -158,10 +158,8 @@ public class AACStream
 	@Override
 	public synchronized void start()
 			throws IllegalStateException, IOException {
-		if (!mStreaming) {
-			configure();
-			super.start();
-		}
+		configure();
+		super.start();
 	}
 
 	public synchronized void configure()
@@ -188,6 +186,10 @@ public class AACStream
 			} else {
 				mPacketizer = new AACLATMPacketizer();
 			}
+
+			if (mPacketizer instanceof AACLATMPacketizer)
+				((AACLATMPacketizer) mPacketizer).setSamplingRate(mQuality.samplingRate);
+
 			mPacketizer.setDestination(mDestination, mRtpPort, mRtcpPort);
 			mPacketizer.getRtpSocket().setOutputStream(mOutputStream, mChannelIdentifier);
 		}
@@ -202,7 +204,8 @@ public class AACStream
 
 			// TODO: streamType always 5 ? profile-level-id always 15 ?
 
-			mSessionDescription = "m=audio " + String.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
+			mSessionDescription = "m=audio " + String
+					.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
 					.toHexString(mConfig) + "; SizeLength=13; IndexLength=3; IndexDeltaLength=3;" + LineBreak;
 		} else {
 
@@ -210,7 +213,8 @@ public class AACStream
 			mChannel = 1;
 			mConfig = (mProfile & 0x1F) << 11 | (mSamplingRateIndex & 0x0F) << 7 | (mChannel & 0x0F) << 3;
 
-			mSessionDescription = "m=audio " + String.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
+			mSessionDescription = "m=audio " + String
+					.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
 					.toHexString(mConfig) + "; SizeLength=13; IndexLength=3; IndexDeltaLength=3;" + LineBreak;
 		}
 	}
@@ -294,12 +298,14 @@ public class AACStream
 	/**
 	 * Stops the stream.
 	 */
+
 	public synchronized void stop() {
 		if (mStreaming) {
+			mMediaCodecs = ArrayTools.removeElement(mMediaCodecs, mMediaCodec);
+			super.stop();
 			if (mMode == MODE_MEDIACODEC_API) {
 				Log.d(TAG, "Interrupting threads...");
 			}
-			super.stop();
 		}
 	}
 

@@ -92,7 +92,9 @@ public abstract class MediaStream
 	 */
 	protected final static byte sPipeApi;
 
-	protected boolean mStreaming = false, mConfigured = false;
+	protected boolean mStreaming = false;
+
+	protected boolean mConfigured = false;
 
 	protected int mRtpPort = 0, mRtcpPort = 0;
 
@@ -119,6 +121,8 @@ public abstract class MediaStream
 	protected MediaRecorder mMediaRecorder;
 
 	protected MediaCodec mMediaCodec;
+
+	protected static  MediaCodec[] mMediaCodecs = {};
 
 	static {
 		// We determine whether or not the MediaCodec API should be used
@@ -334,7 +338,6 @@ public abstract class MediaStream
 					mPacketizer.stop();
 					mMediaCodec.stop();
 					mMediaCodec.release();
-					mMediaCodec = null;
 				}
 			} catch (Exception e) {
 				e.printStackTrace();

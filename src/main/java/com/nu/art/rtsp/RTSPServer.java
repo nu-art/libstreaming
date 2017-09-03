@@ -143,9 +143,13 @@ public class RTSPServer
 =======
 		private Thread clientThread;
 
+<<<<<<< HEAD
 >>>>>>> Stashed changes
 		private Session session;
+=======
+>>>>>>> 8f903bc320d0f38b18001a4fd58637174601ba1f
 
+		private Session session;
 		RTSPClient(Socket clientSocket)
 				throws IOException {
 			inputStream = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
@@ -349,7 +353,7 @@ public class RTSPServer
 			}
 
 			// Parse the requested URI and configure the session
-			CyborgBuilder.getInstance().dispatchModuleEvent("New Session", OnRtspSessionListener.class, new Processor<OnRtspSessionListener>() {
+			dispatchModuleEvent("New Session", OnRtspSessionListener.class, new Processor<OnRtspSessionListener>() {
 				@Override
 				public void process(OnRtspSessionListener onRtspSessionListener) {
 					onRtspSessionListener.onSessionsChanged();

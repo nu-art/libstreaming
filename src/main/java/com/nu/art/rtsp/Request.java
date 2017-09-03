@@ -1,5 +1,7 @@
 package com.nu.art.rtsp;
 
+import android.util.Log;
+
 import com.nu.art.belog.Logger;
 import com.nu.art.core.utils.RegexAnalyzer;
 
@@ -47,6 +49,7 @@ public class Request {
 			throw new SocketException("Client disconnected");
 
 		String[] result = Regexp_Method.findRegex(1, line, 1, 2);
+		Log.d("REQUEST-LINE", line);
 		request.method = result[0];
 		request.uri = result[1];
 
