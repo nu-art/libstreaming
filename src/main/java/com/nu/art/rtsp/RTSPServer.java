@@ -221,7 +221,9 @@ public class RTSPServer
 					return;
 
 				case "pause":
+					return;
 				case "teardown":
+					stop();
 					return;
 
 				default:
