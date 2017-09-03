@@ -63,8 +63,7 @@ public class AACStream
 	/**
 	 * MPEG-4 Audio Object Types supported by ADTS.
 	 **/
-	private static final String[] AUDIO_OBJECT_TYPES = {
-			"NULL",
+	private static final String[] AUDIO_OBJECT_TYPES = {"NULL",
 			// 0
 			"AAC Main",
 			// 1
@@ -79,8 +78,7 @@ public class AACStream
 	/**
 	 * There are 13 supported frequencies by ADTS.
 	 **/
-	public static final int[] AUDIO_SAMPLING_RATES = {
-			96000,
+	public static final int[] AUDIO_SAMPLING_RATES = {96000,
 			// 0
 			88200,
 			// 1
@@ -204,7 +202,8 @@ public class AACStream
 
 			// TODO: streamType always 5 ? profile-level-id always 15 ?
 
-			mSessionDescription = "m=audio " + String.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
+			mSessionDescription = "m=audio " + String
+					.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
 					.toHexString(mConfig) + "; SizeLength=13; IndexLength=3; IndexDeltaLength=3;" + LineBreak;
 		} else {
 
@@ -212,7 +211,8 @@ public class AACStream
 			mChannel = 1;
 			mConfig = (mProfile & 0x1F) << 11 | (mSamplingRateIndex & 0x0F) << 7 | (mChannel & 0x0F) << 3;
 
-			mSessionDescription = "m=audio " + String.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
+			mSessionDescription = "m=audio " + String
+					.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
 					.toHexString(mConfig) + "; SizeLength=13; IndexLength=3; IndexDeltaLength=3;" + LineBreak;
 		}
 	}
@@ -225,71 +225,7 @@ public class AACStream
 		super.encodeWithMediaRecorder();
 	}
 
-	@SuppressLint( {
-										 "InlinedApi",
-										 "NewApi"
-								 })
-	protected void encodeWithMediaCodec1()
-			throws IOException {
-		final int bufferSize = AudioRecord.getMinBufferSize(mQuality.samplingRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT) * 2;
-
-		((AACLATMPacketizer) mPacketizer).setSamplingRate(mQuality.samplingRate);
-
-		MediaFormat format = new MediaFormat();
-		format.setString(MediaFormat.KEY_MIME, "audio/mp4a-latm");
-		format.setInteger(MediaFormat.KEY_BIT_RATE, mQuality.bitRate);
-		format.setInteger(MediaFormat.KEY_CHANNEL_COUNT, 1);
-		format.setInteger(MediaFormat.KEY_SAMPLE_RATE, mQuality.samplingRate);
-		format.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
-		format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, bufferSize);
-
-		mMediaCodec = MediaCodec.createEncoderByType("audio/mp4a-latm");
-		mMediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
-
-		mAudioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, mQuality.samplingRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
-		mAudioRecord.startRecording();
-		mMediaCodec.start();
-
-		final MediaCodecInputStream inputStream = new MediaCodecInputStream(mMediaCodec);
-		final ByteBuffer[] inputBuffers = mMediaCodec.getInputBuffers();
-		mThread = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				int len = 0, bufferIndex = 0;
-				try {
-					while (!Thread.interrupted()) {
-
-						long presentationTimeUs = System.nanoTime() / 1000;
-						Log.d(TAG, "Sampling... " + presentationTimeUs);
-						bufferIndex = mMediaCodec.dequeueInputBuffer(10000);
-						if (bufferIndex >= 0) {
-							inputBuffers[bufferIndex].clear();
-							len = mAudioRecord.read(inputBuffers[bufferIndex], bufferSize);
-							if (len == AudioRecord.ERROR_INVALID_OPERATION || len == AudioRecord.ERROR_BAD_VALUE) {
-								Log.e(TAG, "An error occured with the AudioRecord API !");
-							} else {
-								//Log.v(TAG,"Pushing raw audio to the decoder: len="+len+" bs: "+inputBuffers[bufferIndex].capacity());
-								mMediaCodec.queueInputBuffer(bufferIndex, 0, len, presentationTimeUs, 0);
-							}
-						}
-					}
-				} catch (RuntimeException e) {
-					e.printStackTrace();
-				}
-			}
-		}, "audio sampler");
-		mThread.setPriority(Thread.MAX_PRIORITY);
-		mThread.start();
-
-		// The packetizer encapsulates this stream in an RTP stream and send it over the network
-		mPacketizer.setInputStream(inputStream);
-		mPacketizer.start();
-
-		mStreaming = true;
-	}
-
-	@SuppressLint( {
-										 "InlinedApi",
+	@SuppressLint( {"InlinedApi",
 										 "NewApi"
 								 })
 	protected void encodeWithMediaCodec()
