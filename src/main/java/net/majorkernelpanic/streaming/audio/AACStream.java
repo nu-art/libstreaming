@@ -35,7 +35,6 @@ import android.util.Log;
 import com.nu.art.core.tools.ArrayTools;
 
 import net.majorkernelpanic.streaming.SessionBuilder;
-import net.majorkernelpanic.streaming.rtp.AACADTSPacketizer;
 import net.majorkernelpanic.streaming.rtp.AACLATMPacketizer;
 import net.majorkernelpanic.streaming.rtp.MediaCodecInputStream;
 
@@ -181,14 +180,7 @@ public class AACStream
 
 		if (mMode != mRequestedMode || mPacketizer == null) {
 			mMode = mRequestedMode;
-			if (mMode == MODE_MEDIARECORDER_API) {
-				mPacketizer = new AACADTSPacketizer();
-			} else {
-				mPacketizer = new AACLATMPacketizer();
-			}
-
-			if (mPacketizer instanceof AACLATMPacketizer)
-				((AACLATMPacketizer) mPacketizer).setSamplingRate(mQuality.samplingRate);
+			mPacketizer.setSamplingRate(mQuality.samplingRate);
 
 			mPacketizer.setDestination(mDestination, mRtpPort, mRtcpPort);
 			mPacketizer.getRtpSocket().setOutputStream(mOutputStream, mChannelIdentifier);
@@ -204,8 +196,7 @@ public class AACStream
 
 			// TODO: streamType always 5 ? profile-level-id always 15 ?
 
-			mSessionDescription = "m=audio " + String
-					.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
+			mSessionDescription = "m=audio " + String.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
 					.toHexString(mConfig) + "; SizeLength=13; IndexLength=3; IndexDeltaLength=3;" + LineBreak;
 		} else {
 
@@ -213,8 +204,7 @@ public class AACStream
 			mChannel = 1;
 			mConfig = (mProfile & 0x1F) << 11 | (mSamplingRateIndex & 0x0F) << 7 | (mChannel & 0x0F) << 3;
 
-			mSessionDescription = "m=audio " + String
-					.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
+			mSessionDescription = "m=audio " + String.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
 					.toHexString(mConfig) + "; SizeLength=13; IndexLength=3; IndexDeltaLength=3;" + LineBreak;
 		}
 	}
@@ -222,8 +212,6 @@ public class AACStream
 	@Override
 	protected void encodeWithMediaRecorder()
 			throws IOException {
-		testADTS();
-		((AACADTSPacketizer) mPacketizer).setSamplingRate(mQuality.samplingRate);
 		super.encodeWithMediaRecorder();
 	}
 

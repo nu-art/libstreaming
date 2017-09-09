@@ -19,16 +19,11 @@
 package net.majorkernelpanic.streaming;
 
 import android.hardware.Camera.CameraInfo;
+import android.view.SurfaceView;
 
 import net.majorkernelpanic.streaming.audio.AACStream;
-import net.majorkernelpanic.streaming.audio.AMRNBStream;
 import net.majorkernelpanic.streaming.audio.AudioQuality;
 import net.majorkernelpanic.streaming.audio.AudioStream;
-import net.majorkernelpanic.streaming.gl.SurfaceView;
-import net.majorkernelpanic.streaming.video.H263Stream;
-import net.majorkernelpanic.streaming.video.H264Stream;
-import net.majorkernelpanic.streaming.video.VideoQuality;
-import net.majorkernelpanic.streaming.video.VideoStream;
 
 import java.io.IOException;
 
@@ -68,9 +63,6 @@ public class SessionBuilder {
 	 * Can be used with {@link #setAudioEncoder}.
 	 */
 	public final static int AUDIO_AAC = 5;
-
-	// Default configuration
-	private VideoQuality mVideoQuality = VideoQuality.DEFAULT_VIDEO_QUALITY;
 
 	private AudioQuality mAudioQuality = AudioQuality.DEFAULT_AUDIO_QUALITY;
 
@@ -133,38 +125,9 @@ public class SessionBuilder {
 		session.setTimeToLive(mTimeToLive);
 		session.setCallback(mCallback);
 
-		switch (mAudioEncoder) {
-			case AUDIO_AAC:
-				AACStream stream = new AACStream();
-				session.addAudioTrack(stream);
-				break;
+		AACStream stream = new AACStream();
+		session.addAudioTrack(stream);
 
-			case AUDIO_AMRNB:
-				session.addAudioTrack(new AMRNBStream());
-				break;
-		}
-
-		switch (mVideoEncoder) {
-			case VIDEO_H263:
-				session.addVideoTrack(new H263Stream(mCamera));
-				break;
-
-			case VIDEO_H264:
-				H264Stream stream = new H264Stream(mCamera);
-				session.addVideoTrack(stream);
-				break;
-		}
-
-		if (session.getVideoTrack() != null) {
-			VideoStream video = session.getVideoTrack();
-			video.setFlashState(mFlash);
-			video.setVideoQuality(mVideoQuality);
-			video.setSurfaceView(mSurfaceView);
-			video.setPreviewOrientation(mOrientation);
-			video.setDestinationPorts(5006);
-			if (videoApi > 0)
-				video.setStreamingMethod(videoApi);
-		}
 
 		if (session.getAudioTrack() != null) {
 			AudioStream audio = session.getAudioTrack();
@@ -182,14 +145,6 @@ public class SessionBuilder {
 	 */
 	public SessionBuilder setDestination(String destination) {
 		mDestination = destination;
-		return this;
-	}
-
-	/**
-	 * Sets the video stream quality.
-	 */
-	public SessionBuilder setVideoQuality(VideoQuality quality) {
-		mVideoQuality = quality.clone();
 		return this;
 	}
 
@@ -280,7 +235,6 @@ public class SessionBuilder {
 		return new SessionBuilder().setDestination(mDestination)
 															 .setSurfaceView(mSurfaceView)
 															 .setPreviewOrientation(mOrientation)
-															 .setVideoQuality(mVideoQuality)
 															 .setVideoEncoder(mVideoEncoder)
 															 .setFlashEnabled(mFlash)
 															 .setCamera(mCamera)
