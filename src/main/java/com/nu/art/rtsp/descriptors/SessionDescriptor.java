@@ -4,7 +4,6 @@ import com.nu.art.core.tools.ArrayTools;
 
 import net.majorkernelpanic.streaming.gl.SurfaceView;
 
-import static android.R.attr.name;
 import static com.nu.art.rtsp.Response.LineBreak;
 
 /**
@@ -39,11 +38,6 @@ public class SessionDescriptor {
 
 	public SessionDescriptor removeTrackDesctiptor(TrackDescriptor trackDescriptor) {
 		trackDescriptors = ArrayTools.removeElement(trackDescriptors, trackDescriptor);
-		return this;
-	}
-
-	public SessionDescriptor setName(String name) {
-		this.name = name;
 		return this;
 	}
 

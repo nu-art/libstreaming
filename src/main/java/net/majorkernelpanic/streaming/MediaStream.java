@@ -312,8 +312,6 @@ public abstract class MediaStream
 		if (mRtpPort <= 0 || mRtcpPort <= 0)
 			throw new IllegalStateException("No destination ports set for the stream !");
 
-		mPacketizer.setTimeToLive(mTTL);
-
 		if (mMode != MODE_MEDIARECORDER_API) {
 			encodeWithMediaCodec();
 		} else {

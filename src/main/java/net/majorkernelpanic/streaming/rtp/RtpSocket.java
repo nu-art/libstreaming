@@ -18,18 +18,19 @@
 
 package net.majorkernelpanic.streaming.rtp;
 
+import android.os.SystemClock;
+import android.util.Log;
+
+import net.majorkernelpanic.streaming.rtcp.SenderReport;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.util.Random;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
-import net.majorkernelpanic.streaming.rtcp.SenderReport;
-
-import android.os.SystemClock;
-import android.util.Log;
 
 /**
  * A basic implementation of an RTP socket.
@@ -96,7 +97,6 @@ public class RtpSocket
 	 * @throws IOException
 	 */
 	public RtpSocket() {
-
 		mCacheSize = 0;
 		mBufferCount = 300; // TODO: readjust that when the FIFO is full 
 		mBuffers = new byte[mBufferCount][];
@@ -138,9 +138,16 @@ public class RtpSocket
 
 		try {
 			mSocket = new MulticastSocket();
+			mSocket.setTimeToLive(64);
 		} catch (Exception e) {
 			throw new RuntimeException(e.getMessage());
 		}
+
+		this.mSsrc = new Random().nextInt();
+		for (int i = 0; i < mBufferCount; i++) {
+			setLong(mBuffers[i], mSsrc, 8, 12);
+		}
+		mReport.setSSRC(mSsrc);
 	}
 
 	private void resetFifo() {
@@ -162,17 +169,6 @@ public class RtpSocket
 	}
 
 	/**
-	 * Sets the SSRC of the stream.
-	 */
-	public void setSSRC(int ssrc) {
-		this.mSsrc = ssrc;
-		for (int i = 0; i < mBufferCount; i++) {
-			setLong(mBuffers[i], ssrc, 8, 12);
-		}
-		mReport.setSSRC(mSsrc);
-	}
-
-	/**
 	 * Returns the SSRC of the stream.
 	 */
 	public int getSSRC() {
@@ -191,14 +187,6 @@ public class RtpSocket
 	 */
 	public void setCacheSize(long cacheSize) {
 		mCacheSize = cacheSize;
-	}
-
-	/**
-	 * Sets the Time To Live of the UDP packets.
-	 */
-	public void setTimeToLive(int ttl)
-			throws IOException {
-		mSocket.setTimeToLive(ttl);
 	}
 
 	/**

@@ -18,6 +18,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.regex.Matcher;
 
+import static com.nu.art.rtsp.RTSPClientSession.Pattern_ClientPorts;
 import static com.nu.art.rtsp.RTSPClientSession.Regexp_TrackId;
 import static com.nu.art.rtsp.Response.ResponseCode.BadRequest;
 import static com.nu.art.rtsp.Response.ResponseCode.InternalServerError;
@@ -233,6 +234,22 @@ public class RTSPServer
 						return;
 					}
 
+					String transport = request.headers.get("transport");
+					int rtpPort;
+					int rtcpPort;
+
+					if (transport == null) {
+						int[] ports = session.getTrack(trackId).getDestinationPorts();
+						rtpPort = ports[0];
+						rtcpPort = ports[1];
+					}
+
+					if (m.find()) {
+						m = Pattern_ClientPorts.matcher(transport);
+						rtpPort = Integer.parseInt(m.group(1));
+						rtcpPort = Integer.parseInt(m.group(2));
+						session.getTrack(trackId).setDestinationPorts(rtpPort, rtcpPort);
+					}
 
 					setup(request, response);
 					return;

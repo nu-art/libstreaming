@@ -20,11 +20,8 @@ package net.majorkernelpanic.streaming.rtp;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetAddress;
 import java.util.Random;
-
-import net.majorkernelpanic.streaming.rtcp.SenderReport;
 
 /**
  * Each packetizer inherits from this one and therefore uses RTP and UDP.
@@ -45,18 +42,12 @@ abstract public class AbstractPacketizer {
 	protected long ts = 0;
 
 	public AbstractPacketizer() {
-		int ssrc = new Random().nextInt();
 		ts = new Random().nextInt();
 		socket = new RtpSocket();
-		socket.setSSRC(ssrc);
 	}
 
 	public RtpSocket getRtpSocket() {
 		return socket;
-	}
-
-	public void setSSRC(int ssrc) {
-		socket.setSSRC(ssrc);
 	}
 
 	public int getSSRC() {
@@ -65,11 +56,6 @@ abstract public class AbstractPacketizer {
 
 	public void setInputStream(InputStream is) {
 		this.is = is;
-	}
-
-	public void setTimeToLive(int ttl)
-			throws IOException {
-		socket.setTimeToLive(ttl);
 	}
 
 	/**

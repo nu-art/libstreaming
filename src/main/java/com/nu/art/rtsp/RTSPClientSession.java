@@ -85,16 +85,6 @@ class RTSPClientSession {
 			return;
 		}
 
-		m = Pattern_ClientPorts.matcher(request.headers.get("transport"));
-		if (m.find()) {
-			p1 = Integer.parseInt(m.group(1));
-			p2 = Integer.parseInt(m.group(2));
-			session.getTrack(trackId).setDestinationPorts(p1, p2);
-		} else {
-			int[] ports = session.getTrack(trackId).getDestinationPorts();
-			p1 = ports[0];
-			p2 = ports[1];
-		}
 
 		ssrc = session.getTrack(trackId).getSSRC();
 		src = session.getTrack(trackId).getLocalPorts();
