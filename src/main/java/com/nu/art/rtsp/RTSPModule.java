@@ -3,8 +3,12 @@ package com.nu.art.rtsp;
 import com.nu.art.cyborg.core.CyborgModule;
 import com.nu.art.reflection.tools.ReflectiveTools;
 import com.nu.art.reflection.utils.GenericMap;
-import com.nu.art.rtsp.descriptors.SessionDescriptor;
 import com.nu.art.rtsp.params.ParamProcessor_Base;
+
+import net.majorkernelpanic.streaming.gl.SurfaceView;
+
+import static net.majorkernelpanic.streaming.SessionBuilder.AUDIO_NONE;
+import static net.majorkernelpanic.streaming.SessionBuilder.VIDEO_NONE;
 
 /**
  * Created by tacb0ss on 05/08/2017.
@@ -38,13 +42,19 @@ public class RTSPModule
 
 		String serverName = "unnamed";
 
+		int port;
+
 		String userName;
 
 		String password;
 
-		int port;
+		SurfaceView cameraSurface;
 
-		SessionDescriptor sessionDescriptor;
+		int orientation = 90;
+
+		int videoEncoder = VIDEO_NONE;
+
+		int audioEncoder = AUDIO_NONE;
 
 		private RTSPServerBuilder() {}
 
@@ -68,8 +78,20 @@ public class RTSPModule
 			return this;
 		}
 
-		public void setSessionDescriptor(SessionDescriptor sessionDescriptor) {
-			this.sessionDescriptor = sessionDescriptor;
+		public RTSPServerBuilder setSurfaceView(SurfaceView cameraSurface, int orientation) {
+			this.cameraSurface = cameraSurface;
+			this.orientation = orientation;
+			return this;
+		}
+
+		public RTSPServerBuilder setAudioEncoder(int audioEncoder) {
+			this.audioEncoder = audioEncoder;
+			return this;
+		}
+
+		public RTSPServerBuilder setVideoEncoder(int videoEncoder) {
+			this.videoEncoder = videoEncoder;
+			return this;
 		}
 
 		public final RTSPServer build() {

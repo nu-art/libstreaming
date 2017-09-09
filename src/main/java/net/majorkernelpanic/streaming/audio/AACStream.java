@@ -80,38 +80,38 @@ public class AACStream
 	 * There are 13 supported frequencies by ADTS.
 	 **/
 	public static final int[] AUDIO_SAMPLING_RATES = {
-			// 0
 			96000,
-			// 1
+			// 0
 			88200,
-			// 2
+			// 1
 			64000,
-			// 3
+			// 2
 			48000,
-			// 4
+			// 3
 			44100,
-			// 5
+			// 4
 			32000,
-			// 6
+			// 5
 			24000,
-			// 7
+			// 6
 			22050,
-			// 8
+			// 7
 			16000,
-			// 9
+			// 8
 			12000,
-			// 10
+			// 9
 			11025,
-			// 11
+			// 10
 			8000,
-			// 12
+			// 11
 			7350,
+			// 12
+			-1,
 			// 13
 			-1,
 			// 14
 			-1,
 			// 15
-			-1,
 	};
 
 	private static String mSessionDescription = null;
@@ -204,11 +204,18 @@ public class AACStream
 
 			// TODO: streamType always 5 ? profile-level-id always 15 ?
 
+			mSessionDescription = "m=audio " + String
+					.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
+					.toHexString(mConfig) + "; SizeLength=13; IndexLength=3; IndexDeltaLength=3;" + LineBreak;
 		} else {
 
 			mProfile = 2; // AAC LC
 			mChannel = 1;
 			mConfig = (mProfile & 0x1F) << 11 | (mSamplingRateIndex & 0x0F) << 7 | (mChannel & 0x0F) << 3;
+
+			mSessionDescription = "m=audio " + String
+					.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
+					.toHexString(mConfig) + "; SizeLength=13; IndexLength=3; IndexDeltaLength=3;" + LineBreak;
 		}
 	}
 
@@ -308,8 +315,9 @@ public class AACStream
 	 */
 	public String getSessionDescription()
 			throws IllegalStateException {
-		return "m=audio " + String.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
-				.toHexString(mConfig) + "; SizeLength=13; IndexLength=3; IndexDeltaLength=3;" + LineBreak;
+		if (mSessionDescription == null)
+			throw new IllegalStateException("You need to call configure() first !");
+		return mSessionDescription;
 	}
 
 	/**
