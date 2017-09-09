@@ -28,9 +28,8 @@ import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
-import net.majorkernelpanic.streaming.audio.AudioStream;
+import net.majorkernelpanic.streaming.rtp.AACLATMPacketizer;
 import net.majorkernelpanic.streaming.rtp.AbstractPacketizer;
-import net.majorkernelpanic.streaming.video.VideoStream;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -79,7 +78,7 @@ public abstract class MediaStream
 	/**
 	 * The packetizer that will read the output of the camera and send RTP packets over the networked.
 	 */
-	protected AbstractPacketizer mPacketizer = null;
+	protected AACLATMPacketizer mPacketizer = null;
 
 	protected static byte sSuggestedMode = MODE_MEDIARECORDER_API;
 
@@ -122,7 +121,7 @@ public abstract class MediaStream
 
 	protected MediaCodec mMediaCodec;
 
-	protected static  MediaCodec[] mMediaCodecs = {};
+	protected static MediaCodec[] mMediaCodecs = {};
 
 	static {
 		// We determine whether or not the MediaCodec API should be used
@@ -240,7 +239,7 @@ public abstract class MediaStream
 	 * If the mode is set to {@link #MODE_MEDIACODEC_API} or to {@link #MODE_MEDIACODEC_API_2},
 	 * audio/video will be encoded with using the MediaCodec. <br />
 	 *
-	 * The {@link #MODE_MEDIACODEC_API_2} mode only concerns {@link VideoStream}, it makes
+	 * The {@link #MODE_MEDIACODEC_API_2} mode only concerns  it makes
 	 * use of the createInputSurface() method of the MediaCodec API (Android 4.3 is needed there). <br />
 	 *
 	 * @param mode Can be {@link #MODE_MEDIARECORDER_API}, {@link #MODE_MEDIACODEC_API} or {@link #MODE_MEDIACODEC_API_2}
@@ -284,9 +283,6 @@ public abstract class MediaStream
 
 	/**
 	 * Configures the stream with the settings supplied with
-	 * {@link VideoStream#setVideoQuality(net.majorkernelpanic.streaming.video.VideoQuality)}
-	 * for a {@link VideoStream} and {@link AudioStream#setAudioQuality(net.majorkernelpanic.streaming.audio.AudioQuality)}
-	 * for a {@link AudioStream}.
 	 */
 	public synchronized void configure()
 			throws IllegalStateException, IOException {

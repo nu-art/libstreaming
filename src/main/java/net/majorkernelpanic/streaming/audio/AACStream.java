@@ -35,7 +35,6 @@ import android.util.Log;
 import com.nu.art.core.tools.ArrayTools;
 
 import net.majorkernelpanic.streaming.SessionBuilder;
-import net.majorkernelpanic.streaming.rtp.AACADTSPacketizer;
 import net.majorkernelpanic.streaming.rtp.AACLATMPacketizer;
 import net.majorkernelpanic.streaming.rtp.MediaCodecInputStream;
 
@@ -181,14 +180,7 @@ public class AACStream
 
 		if (mMode != mRequestedMode || mPacketizer == null) {
 			mMode = mRequestedMode;
-			if (mMode == MODE_MEDIARECORDER_API) {
-				mPacketizer = new AACADTSPacketizer();
-			} else {
-				mPacketizer = new AACLATMPacketizer();
-			}
-
-			if (mPacketizer instanceof AACLATMPacketizer)
-				((AACLATMPacketizer) mPacketizer).setSamplingRate(mQuality.samplingRate);
+			mPacketizer.setSamplingRate(mQuality.samplingRate);
 
 			mPacketizer.setDestination(mDestination, mRtpPort, mRtcpPort);
 			mPacketizer.getRtpSocket().setOutputStream(mOutputStream, mChannelIdentifier);
@@ -215,8 +207,6 @@ public class AACStream
 	@Override
 	protected void encodeWithMediaRecorder()
 			throws IOException {
-		testADTS();
-		((AACADTSPacketizer) mPacketizer).setSamplingRate(mQuality.samplingRate);
 		super.encodeWithMediaRecorder();
 	}
 
