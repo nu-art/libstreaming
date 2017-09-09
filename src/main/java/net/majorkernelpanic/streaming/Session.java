@@ -18,21 +18,18 @@
 
 package net.majorkernelpanic.streaming;
 
-import android.hardware.Camera.CameraInfo;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 
+import com.nu.art.core.exceptions.runtime.NotImplementedYetException;
+
 import net.majorkernelpanic.streaming.audio.AudioQuality;
 import net.majorkernelpanic.streaming.audio.AudioStream;
-import net.majorkernelpanic.streaming.exceptions.CameraInUseException;
 import net.majorkernelpanic.streaming.exceptions.ConfNotSupportedException;
 import net.majorkernelpanic.streaming.exceptions.InvalidSurfaceException;
 import net.majorkernelpanic.streaming.exceptions.StorageUnavailableException;
-import net.majorkernelpanic.streaming.gl.SurfaceView;
 import net.majorkernelpanic.streaming.rtsp.RtspClient;
-import net.majorkernelpanic.streaming.video.VideoQuality;
-import net.majorkernelpanic.streaming.video.VideoStream;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -44,7 +41,6 @@ import static com.nu.art.rtsp.Response.LineBreak;
  * You should instantiate this class with the {@link SessionBuilder}.<br />
  * This is the class you will want to use to stream audio and or video to some peer using RTP.<br />
  *
- * It holds a {@link VideoStream} and a {@link AudioStream} together and provides
  * synchronous and asynchronous functions to start and stop those steams.
  * You should implement a callback interface {@link Callback} to receive notifications and error reports.<br />
  *
@@ -118,8 +114,6 @@ public class Session {
 
 	private AudioStream mAudioStream = null;
 
-	private VideoStream mVideoStream = null;
-
 	private Callback mCallback;
 
 	private Handler mMainHandler;
@@ -159,7 +153,6 @@ public class Session {
 		public void onSessionError(int reason, int streamType, Exception e);
 
 		/**
-		 * Called when the previw of the {@link VideoStream}
 		 * has correctly been started.
 		 * If an error occurs while starting the preview,
 		 * {@link Callback#onSessionError(int, int, Exception)} will be
@@ -201,14 +194,6 @@ public class Session {
 	/**
 	 * You probably don't need to use that directly, use the {@link SessionBuilder}.
 	 */
-	void addVideoTrack(VideoStream track) {
-		removeVideoTrack();
-		mVideoStream = track;
-	}
-
-	/**
-	 * You probably don't need to use that directly, use the {@link SessionBuilder}.
-	 */
 	void removeAudioTrack() {
 		if (mAudioStream != null) {
 			mAudioStream.stop();
@@ -217,27 +202,10 @@ public class Session {
 	}
 
 	/**
-	 * You probably don't need to use that directly, use the {@link SessionBuilder}.
-	 */
-	void removeVideoTrack() {
-		if (mVideoStream != null) {
-			mVideoStream.stopPreview();
-			mVideoStream = null;
-		}
-	}
-
-	/**
 	 * Returns the underlying {@link AudioStream} used by the {@link Session}.
 	 */
 	public AudioStream getAudioTrack() {
 		return mAudioStream;
-	}
-
-	/**
-	 * Returns the underlying {@link VideoStream} used by the {@link Session}.
-	 */
-	public VideoStream getVideoTrack() {
-		return mVideoStream;
 	}
 
 	/**
@@ -277,48 +245,6 @@ public class Session {
 	 */
 	public void setTimeToLive(int ttl) {
 		mTimeToLive = ttl;
-	}
-
-	/**
-	 * Sets the configuration of the stream. <br />
-	 * You can call this method at any time and changes will take
-	 * effect next time you call {@link #configure()}.
-	 *
-	 * @param quality Quality of the stream
-	 */
-	public void setVideoQuality(VideoQuality quality) {
-		if (mVideoStream != null) {
-			mVideoStream.setVideoQuality(quality);
-		}
-	}
-
-	/**
-	 * Sets a Surface to show a preview of recorded media (video). <br />
-	 * You can call this method at any time and changes will take
-	 * effect next time you call {@link #start()} or {@link #startPreview()}.
-	 */
-	public void setSurfaceView(final SurfaceView view) {
-		mHandler.post(new Runnable() {
-			@Override
-			public void run() {
-				if (mVideoStream != null) {
-					mVideoStream.setSurfaceView(view);
-				}
-			}
-		});
-	}
-
-	/**
-	 * Sets the orientation of the preview. <br />
-	 * You can call this method at any time and changes will take
-	 * effect next time you call {@link #configure()}.
-	 *
-	 * @param orientation The orientation of the preview
-	 */
-	public void setPreviewOrientation(int orientation) {
-		if (mVideoStream != null) {
-			mVideoStream.setPreviewOrientation(orientation);
-		}
 	}
 
 	/**
@@ -368,10 +294,6 @@ public class Session {
 			sessionDescription.append(mAudioStream.getSessionDescription());
 			sessionDescription.append("a=control:trackID=" + 0).append(LineBreak);
 		}
-		if (mVideoStream != null) {
-			sessionDescription.append(mVideoStream.getSessionDescription());
-			sessionDescription.append("a=control:trackID=" + 1).append(LineBreak);
-		}
 		return sessionDescription.toString();
 	}
 
@@ -389,8 +311,6 @@ public class Session {
 		long sum = 0;
 		if (mAudioStream != null)
 			sum += mAudioStream.getBitrate();
-		if (mVideoStream != null)
-			sum += mVideoStream.getBitrate();
 		return sum;
 	}
 
@@ -398,7 +318,7 @@ public class Session {
 	 * Indicates if a track is currently running.
 	 */
 	public boolean isStreaming() {
-		return (mAudioStream != null && mAudioStream.isStreaming()) || (mVideoStream != null && mVideoStream.isStreaming());
+		return (mAudioStream != null && mAudioStream.isStreaming());
 	}
 
 	/**
@@ -423,16 +343,13 @@ public class Session {
 	 * an error occurs.
 	 **/
 	public void syncConfigure()
-			throws CameraInUseException, StorageUnavailableException, ConfNotSupportedException, InvalidSurfaceException, RuntimeException, IOException {
+			throws RuntimeException, IOException {
 
 		for (int id = 0; id < 2; id++) {
-			Stream stream = id == 0 ? mAudioStream : mVideoStream;
+			Stream stream = mAudioStream;
 			if (stream != null && !stream.isStreaming()) {
 				try {
 					stream.configure();
-				} catch (CameraInUseException e) {
-					postError(ERROR_CAMERA_ALREADY_IN_USE, id, e);
-					throw e;
 				} catch (StorageUnavailableException e) {
 					postError(ERROR_STORAGE_NOT_READY, id, e);
 					throw e;
@@ -443,9 +360,6 @@ public class Session {
 					postError(ERROR_INVALID_SURFACE, id, e);
 					throw e;
 				} catch (IOException e) {
-					postError(ERROR_OTHER, id, e);
-					throw e;
-				} catch (RuntimeException e) {
 					postError(ERROR_OTHER, id, e);
 					throw e;
 				}
@@ -475,9 +389,9 @@ public class Session {
 	 * @param id The id of the stream to start
 	 **/
 	public void syncStart(int id)
-			throws CameraInUseException, StorageUnavailableException, ConfNotSupportedException, InvalidSurfaceException, UnknownHostException, IOException {
+			throws ConfNotSupportedException, InvalidSurfaceException, IOException {
 
-		Stream stream = id == 0 ? mAudioStream : mVideoStream;
+		Stream stream = mAudioStream;
 		if (stream != null && !stream.isStreaming()) {
 			try {
 				InetAddress destination = InetAddress.getByName(mDestination);
@@ -493,9 +407,6 @@ public class Session {
 			} catch (UnknownHostException e) {
 				postError(ERROR_UNKNOWN_HOST, id, e);
 				throw e;
-			} catch (CameraInUseException e) {
-				postError(ERROR_CAMERA_ALREADY_IN_USE, id, e);
-				throw e;
 			} catch (StorageUnavailableException e) {
 				postError(ERROR_STORAGE_NOT_READY, id, e);
 				throw e;
@@ -508,9 +419,6 @@ public class Session {
 			} catch (IOException e) {
 				postError(ERROR_OTHER, id, e);
 				throw e;
-			} catch (RuntimeException e) {
-				postError(ERROR_OTHER, id, e);
-				throw e;
 			}
 		}
 	}
@@ -520,7 +428,7 @@ public class Session {
 	 * Throws exceptions in addition to calling a callback.
 	 **/
 	public void syncStart()
-			throws CameraInUseException, StorageUnavailableException, ConfNotSupportedException, InvalidSurfaceException, UnknownHostException, IOException {
+			throws ConfNotSupportedException, InvalidSurfaceException, IOException {
 
 		syncStart(1);
 		try {
@@ -552,7 +460,7 @@ public class Session {
 	 * @param id The id of the stream to stop
 	 **/
 	private void syncStop(final int id) {
-		Stream stream = id == 0 ? mAudioStream : mVideoStream;
+		Stream stream = mAudioStream;
 		if (stream != null) {
 			stream.stop();
 		}
@@ -568,129 +476,11 @@ public class Session {
 	}
 
 	/**
-	 * Asynchronously starts the camera preview. <br />
-	 * You should of course pass a {@link SurfaceView} to {@link #setSurfaceView(SurfaceView)}
-	 * before calling this method. Otherwise, the {@link Callback#onSessionError(int, int, Exception)}
-	 * callback will be called with {@link #ERROR_INVALID_SURFACE}.
-	 */
-	public void startPreview() {
-		mHandler.post(new Runnable() {
-			@Override
-			public void run() {
-				if (mVideoStream != null) {
-					try {
-						mVideoStream.startPreview();
-						postPreviewStarted();
-						mVideoStream.configure();
-					} catch (CameraInUseException e) {
-						postError(ERROR_CAMERA_ALREADY_IN_USE, STREAM_VIDEO, e);
-					} catch (ConfNotSupportedException e) {
-						postError(ERROR_CONFIGURATION_NOT_SUPPORTED, STREAM_VIDEO, e);
-					} catch (InvalidSurfaceException e) {
-						postError(ERROR_INVALID_SURFACE, STREAM_VIDEO, e);
-					} catch (RuntimeException e) {
-						postError(ERROR_OTHER, STREAM_VIDEO, e);
-					} catch (StorageUnavailableException e) {
-						postError(ERROR_STORAGE_NOT_READY, STREAM_VIDEO, e);
-					} catch (IOException e) {
-						postError(ERROR_OTHER, STREAM_VIDEO, e);
-					}
-				}
-			}
-		});
-	}
-
-	/**
-	 * Asynchronously stops the camera preview.
-	 */
-	public void stopPreview() {
-		mHandler.post(new Runnable() {
-			@Override
-			public void run() {
-				if (mVideoStream != null) {
-					mVideoStream.stopPreview();
-				}
-			}
-		});
-	}
-
-	/**
-	 * Switch between the front facing and the back facing camera of the phone. <br />
-	 * If {@link #startPreview()} has been called, the preview will be  briefly interrupted. <br />
-	 * If {@link #start()} has been called, the stream will be  briefly interrupted.<br />
-	 * To find out which camera is currently selected, use {@link #getCamera()}
-	 **/
-	public void switchCamera() {
-		mHandler.post(new Runnable() {
-			@Override
-			public void run() {
-				if (mVideoStream != null) {
-					try {
-						mVideoStream.switchCamera();
-						postPreviewStarted();
-					} catch (CameraInUseException e) {
-						postError(ERROR_CAMERA_ALREADY_IN_USE, STREAM_VIDEO, e);
-					} catch (ConfNotSupportedException e) {
-						postError(ERROR_CONFIGURATION_NOT_SUPPORTED, STREAM_VIDEO, e);
-					} catch (InvalidSurfaceException e) {
-						postError(ERROR_INVALID_SURFACE, STREAM_VIDEO, e);
-					} catch (IOException e) {
-						postError(ERROR_OTHER, STREAM_VIDEO, e);
-					} catch (RuntimeException e) {
-						postError(ERROR_OTHER, STREAM_VIDEO, e);
-					}
-				}
-			}
-		});
-	}
-
-	/**
-	 * Returns the id of the camera currently selected. <br />
-	 * It can be either {@link CameraInfo#CAMERA_FACING_BACK} or
-	 * {@link CameraInfo#CAMERA_FACING_FRONT}.
-	 */
-	public int getCamera() {
-		return mVideoStream != null ? mVideoStream.getCamera() : 0;
-	}
-
-	/**
-	 * Toggles the LED of the phone if it has one.
-	 * You can get the current state of the flash with
-	 * {@link Session#getVideoTrack()} and {@link VideoStream#getFlashState()}.
-	 **/
-	public void toggleFlash() {
-		mHandler.post(new Runnable() {
-			@Override
-			public void run() {
-				if (mVideoStream != null) {
-					try {
-						mVideoStream.toggleFlash();
-					} catch (RuntimeException e) {
-						postError(ERROR_CAMERA_HAS_NO_FLASH, STREAM_VIDEO, e);
-					}
-				}
-			}
-		});
-	}
-
-	/**
 	 * Deletes all existing tracks & release associated resources.
 	 */
 	public void release() {
 		removeAudioTrack();
-		removeVideoTrack();
 		mHandler.getLooper().quit();
-	}
-
-	private void postPreviewStarted() {
-		mMainHandler.post(new Runnable() {
-			@Override
-			public void run() {
-				if (mCallback != null) {
-					mCallback.onPreviewStarted();
-				}
-			}
-		});
 	}
 
 	private void postSessionConfigured() {
@@ -763,14 +553,13 @@ public class Session {
 	public boolean trackExists(int id) {
 		if (id == 0)
 			return mAudioStream != null;
-		else
-			return mVideoStream != null;
+
+		return false;
 	}
 
 	public Stream getTrack(int id) {
 		if (id == 0)
 			return mAudioStream;
-		else
-			return mVideoStream;
+		throw new NotImplementedYetException("no video yet");
 	}
 }

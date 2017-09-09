@@ -1,11 +1,11 @@
 package com.nu.art.rtsp;
 
+import android.view.SurfaceView;
+
 import com.nu.art.cyborg.core.CyborgModule;
 import com.nu.art.reflection.tools.ReflectiveTools;
 import com.nu.art.reflection.utils.GenericMap;
 import com.nu.art.rtsp.params.ParamProcessor_Base;
-
-import net.majorkernelpanic.streaming.gl.SurfaceView;
 
 import static net.majorkernelpanic.streaming.SessionBuilder.AUDIO_NONE;
 import static net.majorkernelpanic.streaming.SessionBuilder.VIDEO_NONE;
