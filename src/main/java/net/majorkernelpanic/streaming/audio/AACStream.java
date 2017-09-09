@@ -80,38 +80,38 @@ public class AACStream
 	 * There are 13 supported frequencies by ADTS.
 	 **/
 	public static final int[] AUDIO_SAMPLING_RATES = {
-			96000,
 			// 0
-			88200,
+			96000,
 			// 1
-			64000,
+			88200,
 			// 2
-			48000,
+			64000,
 			// 3
-			44100,
+			48000,
 			// 4
-			32000,
+			44100,
 			// 5
-			24000,
+			32000,
 			// 6
-			22050,
+			24000,
 			// 7
-			16000,
+			22050,
 			// 8
-			12000,
+			16000,
 			// 9
-			11025,
+			12000,
 			// 10
-			8000,
+			11025,
 			// 11
-			7350,
+			8000,
 			// 12
-			-1,
+			7350,
 			// 13
 			-1,
 			// 14
 			-1,
 			// 15
+			-1,
 	};
 
 	private static String mSessionDescription = null;
@@ -204,18 +204,11 @@ public class AACStream
 
 			// TODO: streamType always 5 ? profile-level-id always 15 ?
 
-			mSessionDescription = "m=audio " + String
-					.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
-					.toHexString(mConfig) + "; SizeLength=13; IndexLength=3; IndexDeltaLength=3;" + LineBreak;
 		} else {
 
 			mProfile = 2; // AAC LC
 			mChannel = 1;
 			mConfig = (mProfile & 0x1F) << 11 | (mSamplingRateIndex & 0x0F) << 7 | (mChannel & 0x0F) << 3;
-
-			mSessionDescription = "m=audio " + String
-					.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
-					.toHexString(mConfig) + "; SizeLength=13; IndexLength=3; IndexDeltaLength=3;" + LineBreak;
 		}
 	}
 
@@ -315,9 +308,8 @@ public class AACStream
 	 */
 	public String getSessionDescription()
 			throws IllegalStateException {
-		if (mSessionDescription == null)
-			throw new IllegalStateException("You need to call configure() first !");
-		return mSessionDescription;
+		return "m=audio " + String.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
+				.toHexString(mConfig) + "; SizeLength=13; IndexLength=3; IndexDeltaLength=3;" + LineBreak;
 	}
 
 	/**
