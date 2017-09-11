@@ -217,7 +217,7 @@ public class RtspServer
 	}
 
 	/**
-	 * Set Basic authorization to access RTSP Stream
+	 * Set Basic authorization to access RTSP AACStream
 	 *
 	 * @param username username
 	 * @param password password

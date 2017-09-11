@@ -7,8 +7,9 @@ package com.nu.art.rtsp.params;
 public enum RTSPParams {
 //	Flash("flash", ParamProcessor_Flash.class),
 //	Camera("camera", ParamProcessor_Camera.class),
-	AudioApi("audioapi", ParamProcessor_AudioApi.class),
+//	AudioApi("audioapi", ParamProcessor_AudioApi.class),
 //	VideoApi("videoapi", ParamProcessor_VideoApi.class),
+
 	TTL("ttl", ParamProcessor_TTL.class),
 	Unicast("unicast", ParamProcessor_Unicast.class),
 	Multicast("multicast", ParamProcessor_Multicast.class),

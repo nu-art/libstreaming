@@ -24,8 +24,8 @@ import android.os.Looper;
 
 import com.nu.art.core.exceptions.runtime.NotImplementedYetException;
 
+import net.majorkernelpanic.streaming.audio.AACStream;
 import net.majorkernelpanic.streaming.audio.AudioQuality;
-import net.majorkernelpanic.streaming.audio.AudioStream;
 import net.majorkernelpanic.streaming.exceptions.ConfNotSupportedException;
 import net.majorkernelpanic.streaming.exceptions.InvalidSurfaceException;
 import net.majorkernelpanic.streaming.exceptions.StorageUnavailableException;
@@ -112,7 +112,7 @@ public class Session {
 
 	private long mTimestamp;
 
-	private AudioStream mAudioStream = null;
+	private AACStream mAudioStream = null;
 
 	private Callback mCallback;
 
@@ -186,7 +186,7 @@ public class Session {
 	/**
 	 * You probably don't need to use that directly, use the {@link SessionBuilder}.
 	 */
-	void addAudioTrack(AudioStream track) {
+	void addAudioTrack(AACStream track) {
 		removeAudioTrack();
 		mAudioStream = track;
 	}
@@ -202,9 +202,9 @@ public class Session {
 	}
 
 	/**
-	 * Returns the underlying {@link AudioStream} used by the {@link Session}.
+	 * Returns the underlying {@link AACStream} used by the {@link Session}.
 	 */
-	public AudioStream getAudioTrack() {
+	public AACStream getAudioTrack() {
 		return mAudioStream;
 	}
 
@@ -346,7 +346,7 @@ public class Session {
 			throws RuntimeException, IOException {
 
 		for (int id = 0; id < 2; id++) {
-			Stream stream = mAudioStream;
+			AACStream stream = mAudioStream;
 			if (stream != null && !stream.isStreaming()) {
 				try {
 					stream.configure();
@@ -391,19 +391,18 @@ public class Session {
 	public void syncStart(int id)
 			throws ConfNotSupportedException, InvalidSurfaceException, IOException {
 
-		Stream stream = mAudioStream;
+		AACStream stream = mAudioStream;
 		if (stream != null && !stream.isStreaming()) {
 			try {
 				InetAddress destination = InetAddress.getByName(mDestination);
 				stream.setTimeToLive(mTimeToLive);
 				stream.setDestinationAddress(destination);
 				stream.start();
-				if (getTrack(1 - id) == null || getTrack(1 - id).isStreaming()) {
-					postSessionStarted();
-				}
-				if (getTrack(1 - id) == null || !getTrack(1 - id).isStreaming()) {
-					mHandler.post(mUpdateBitrate);
-				}
+				if (getTrack(id) == null)
+					if (getTrack(id).isStreaming())
+						postSessionStarted();
+					else
+						mHandler.post(mUpdateBitrate);
 			} catch (UnknownHostException e) {
 				postError(ERROR_UNKNOWN_HOST, id, e);
 				throw e;
@@ -429,16 +428,10 @@ public class Session {
 	 **/
 	public void syncStart()
 			throws ConfNotSupportedException, InvalidSurfaceException, IOException {
-
-		syncStart(1);
 		try {
 			syncStart(0);
-		} catch (RuntimeException e) {
-			syncStop(1);
-			throw e;
-		} catch (IOException e) {
-			syncStop(1);
-			throw e;
+		} catch (Exception e) {
+			syncStop(0);
 		}
 	}
 
@@ -460,7 +453,7 @@ public class Session {
 	 * @param id The id of the stream to stop
 	 **/
 	private void syncStop(final int id) {
-		Stream stream = mAudioStream;
+		AACStream stream = mAudioStream;
 		if (stream != null) {
 			stream.stop();
 		}
@@ -557,7 +550,7 @@ public class Session {
 		return false;
 	}
 
-	public Stream getTrack(int id) {
+	public AACStream getTrack(int id) {
 		if (id == 0)
 			return mAudioStream;
 		throw new NotImplementedYetException("no video yet");

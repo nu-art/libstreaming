@@ -24,7 +24,7 @@ import android.os.Looper;
 import android.util.Log;
 
 import net.majorkernelpanic.streaming.Session;
-import net.majorkernelpanic.streaming.Stream;
+import net.majorkernelpanic.streaming.audio.AACStream;
 import net.majorkernelpanic.streaming.rtp.RtpSocket;
 
 import java.io.BufferedOutputStream;
@@ -424,7 +424,7 @@ public class RtspClient {
 	private void sendRequestSetup()
 			throws IllegalStateException, SocketException, IOException {
 		for (int i = 0; i < 2; i++) {
-			Stream stream = mParameters.session.getTrack(i);
+			AACStream stream = mParameters.session.getTrack(i);
 			if (stream != null) {
 				String params = mParameters.transport == TRANSPORT_TCP ? ("TCP;interleaved=" + 2 * i + "-" + (2 * i + 1))
 																															 : ("UDP;unicast;client_port=" + (5000 + 2 * i) + "-" + (5000 + 2 * i + 1) + ";mode=receive");

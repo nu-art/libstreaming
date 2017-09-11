@@ -23,7 +23,6 @@ import android.view.SurfaceView;
 
 import net.majorkernelpanic.streaming.audio.AACStream;
 import net.majorkernelpanic.streaming.audio.AudioQuality;
-import net.majorkernelpanic.streaming.audio.AudioStream;
 
 import java.io.IOException;
 
@@ -128,13 +127,10 @@ public class SessionBuilder {
 		AACStream stream = new AACStream();
 		session.addAudioTrack(stream);
 
-
 		if (session.getAudioTrack() != null) {
-			AudioStream audio = session.getAudioTrack();
+			AACStream audio = session.getAudioTrack();
 			audio.setAudioQuality(mAudioQuality);
 			audio.setDestinationPorts(5004);
-			if (audioApi > 0)
-				audio.setStreamingMethod(audioApi);
 		}
 
 		return session;
