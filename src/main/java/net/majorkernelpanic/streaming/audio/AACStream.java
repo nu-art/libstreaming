@@ -24,10 +24,10 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.media.MediaRecorder;
-import android.os.Build;
 import android.service.textservice.SpellCheckerService.Session;
-import android.util.Log;
 
+import com.nu.art.belog.Logger;
+import com.nu.art.core.exceptions.runtime.BadImplementationException;
 import com.nu.art.core.tools.ArrayTools;
 
 import net.majorkernelpanic.streaming.SessionBuilder;
@@ -49,9 +49,8 @@ import static com.nu.art.rtsp.Response.LineBreak;
  * to configure the stream. You can then call {@link #start()} to start the RTP stream.
  * Call {@link #stop()} to stop the stream.
  */
-public class AACStream {
-
-	public final static String TAG = "AACStream";
+public class AACStream
+		extends Logger {
 
 	/**
 	 * There are 13 supported frequencies by ADTS.
@@ -99,23 +98,18 @@ public class AACStream {
 
 	public AACStream() {
 		super();
+		AACStreamingSupported();
 		mPacketizer = new AACLATMPacketizer();
-		if (!AACStreamingSupported()) {
-			Log.e(TAG, "AAC not supported on this phone");
-			throw new RuntimeException("AAC not supported by this phone !");
-		} else {
-			Log.d(TAG, "AAC supported on this phone");
-		}
 	}
 
-	private static boolean AACStreamingSupported() {
-		if (Build.VERSION.SDK_INT < 14)
-			return false;
+	private boolean AACStreamingSupported() {
+
 		try {
 			MediaRecorder.OutputFormat.class.getField("AAC_ADTS");
+			logInfo("AAC supported on this phone");
 			return true;
 		} catch (Exception e) {
-			return false;
+			throw new BadImplementationException("AAC not supported by this phone !", e);
 		}
 	}
 
@@ -130,7 +124,7 @@ public class AACStream {
 
 		mPacketizer.setTimeToLive(mTTL);
 
-		encodeWithMediaCodec();
+		startRecording();
 	}
 
 	public synchronized void configure()
@@ -166,7 +160,7 @@ public class AACStream {
 		mConfig = (mProfile & 0x1F) << 11 | (mSamplingRateIndex & 0x0F) << 7 | (mChannel & 0x0F) << 3;
 	}
 
-	private void encodeWithMediaCodec()
+	private void startRecording()
 			throws IOException {
 
 		final int bufferSize = AudioRecord.getMinBufferSize(mQuality.samplingRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT) * 2;
@@ -212,7 +206,7 @@ public class AACStream {
 								//									continue;
 								inputBuffer.put(sampler);
 								if (len == AudioRecord.ERROR_INVALID_OPERATION || len == AudioRecord.ERROR_BAD_VALUE) {
-									Log.e(TAG, "An error occured with the AudioRecord API !");
+									logError("An error occured with the AudioRecord API !");
 								} else {
 									//Log.v(TAG,"Pushing raw audio to the decoder: len="+len+" bs: "+inputBuffers[bufferIndex].capacity());
 									mediaCodec.queueInputBuffer(bufferIndex, 0, len, System.nanoTime() / 1000, 0);
@@ -271,31 +265,12 @@ public class AACStream {
 	 *
 	 *
 	 */
-	protected int mOutputFormat;
-
-	protected int mAudioEncoder;
-
 	protected AudioQuality mRequestedQuality = AudioQuality.DEFAULT_AUDIO_QUALITY.clone();
 
 	protected AudioQuality mQuality = mRequestedQuality.clone();
 
 	public void setAudioQuality(AudioQuality quality) {
 		mRequestedQuality = quality;
-	}
-
-	/**
-	 * Returns the quality of the stream.
-	 */
-	public AudioQuality getAudioQuality() {
-		return mQuality;
-	}
-
-	protected void setAudioEncoder(int audioEncoder) {
-		mAudioEncoder = audioEncoder;
-	}
-
-	protected void setOutputFormat(int outputFormat) {
-		mOutputFormat = outputFormat;
 	}
 
 	/*

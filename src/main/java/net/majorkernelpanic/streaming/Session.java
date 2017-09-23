@@ -61,15 +61,6 @@ public class Session {
 
 	public final static String TAG = "Session";
 
-	public final static int STREAM_VIDEO = 0x01;
-
-	public final static int STREAM_AUDIO = 0x00;
-
-	/**
-	 * Some app is already using a camera (Camera.open() has failed).
-	 */
-	public final static int ERROR_CAMERA_ALREADY_IN_USE = 0x00;
-
 	/**
 	 * The phone may not support some streaming parameters that you are trying to use (bit rate, frame rate, resolution...).
 	 */
@@ -81,11 +72,6 @@ public class Session {
 	 * See H264Stream and AACStream to find out why libstreaming would want to something like that.
 	 */
 	public final static int ERROR_STORAGE_NOT_READY = 0x02;
-
-	/**
-	 * The phone has no flash.
-	 */
-	public final static int ERROR_CAMERA_HAS_NO_FLASH = 0x03;
 
 	/**
 	 * The supplied SurfaceView is not a valid surface, or has not been created yet.
