@@ -56,9 +56,17 @@ public class RTSPServer
 
 	public interface RTSPServerEventsListener {
 
-		void onClientConnected(RTSPClient client);
+		void onStartingServerError(Throwable t);
 
-		void onClientDisconnected(RTSPClient client);
+		void onConnectingToClientError(Throwable t);
+
+		void onServerStarted();
+
+		void onServerStopped();
+
+		//		void onClientConnected(RTSPClient client);
+		//
+		//		void onClientDisconnected(RTSPClient client);
 	}
 
 	private RTSPClient[] clients = {};
@@ -76,12 +84,23 @@ public class RTSPServer
 		try {
 			logInfo("Starting...");
 			serverSocket = new ServerSocket(builder.port);
-		} catch (IOException e) {
-			logError("Error Starting Server: " + builder.serverName, e);
+		} catch (final IOException e) {
+			dispatchModuleEvent("Error Starting Server: " + builder.serverName, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
+				@Override
+				public void process(RTSPServerEventsListener listener) {
+					listener.onStartingServerError(e);
+				}
+			});
 			return;
 		}
 
 		try {
+			dispatchModuleEvent("Error Starting Connected: " + builder.serverName, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
+				@Override
+				public void process(RTSPServerEventsListener listener) {
+					listener.onServerStarted();
+				}
+			});
 			while (serverThread != null) {
 				logInfo("Waiting for client");
 				Socket clientSocket = serverSocket.accept();
@@ -89,8 +108,13 @@ public class RTSPServer
 				logInfo("Connecting client");
 				new RTSPClient(clientSocket);
 			}
-		} catch (IOException e) {
-			logError("Error connecting to client: " + builder.serverName, e);
+		} catch (final IOException e) {
+			dispatchModuleEvent("Error connecting to client: " + builder.serverName, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
+				@Override
+				public void process(RTSPServerEventsListener listener) {
+					listener.onConnectingToClientError(e);
+				}
+			});
 		} finally {
 			try {
 				serverSocket.close();
@@ -104,8 +128,11 @@ public class RTSPServer
 		if (serverThread != null || serverSocket != null)
 			throw new BadImplementationException("RTSP Server instances are for a single use, create another instance with same configuration!!");
 
-		SessionBuilder.getInstance().setSurfaceView(builder.cameraSurface).setPreviewOrientation(builder.orientation).setAudioEncoder(builder.audioEncoder)
-				.setVideoEncoder(builder.videoEncoder);
+		SessionBuilder.getInstance()
+									.setSurfaceView(builder.cameraSurface)
+									.setPreviewOrientation(builder.orientation)
+									.setAudioEncoder(builder.audioEncoder)
+									.setVideoEncoder(builder.videoEncoder);
 
 		serverThread = new Thread(this, "RTSP-" + builder.serverName);
 		serverThread.start();
@@ -115,15 +142,20 @@ public class RTSPServer
 		serverThread = null;
 		try {
 			serverSocket.close();
-			for (RTSPClient client : clients) {
-				client.stop();
-			}
 		} catch (IOException e) {
 			logError("Error closing server socket", e);
 		}
+
+		for (RTSPClient client : clients) {
+			try {
+				client.stop();
+			} catch (Exception e) {
+				logError("Error disconnecting client: " + client, e);
+			}
+		}
 	}
 
-	private class RTSPClient
+	public class RTSPClient
 			extends Logger
 			implements Runnable {
 
@@ -386,22 +418,22 @@ public class RTSPServer
 
 	private void addRTSPClient(final RTSPClient client) {
 		clients = ArrayTools.appendElement(clients, client);
-		dispatchModuleEvent("On client connected: " + client, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
-			@Override
-			public void process(RTSPServerEventsListener listener) {
-				listener.onClientConnected(client);
-			}
-		});
+		//		dispatchModuleEvent("On client connected: " + client, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
+		//			@Override
+		//			public void process(RTSPServerEventsListener listener) {
+		//				listener.onClientConnected(client);
+		//			}
+		//		});
 	}
 
 	private void removeRTSPClient(final RTSPClient client) {
 		clients = ArrayTools.removeElement(clients, client);
-		dispatchModuleEvent("On client disconnected: " + client, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
-			@Override
-			public void process(RTSPServerEventsListener listener) {
-				listener.onClientDisconnected(client);
-			}
-		});
+		//		dispatchModuleEvent("On client disconnected: " + client, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
+		//			@Override
+		//			public void process(RTSPServerEventsListener listener) {
+		//				listener.onClientDisconnected(client);
+		//			}
+		//		});
 	}
 
 	@NonNull
