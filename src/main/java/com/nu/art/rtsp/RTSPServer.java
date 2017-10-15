@@ -95,7 +95,7 @@ public class RTSPServer
 		}
 
 		try {
-			dispatchModuleEvent("Error Starting Connected: " + builder.serverName, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
+			dispatchModuleEvent("On Server Started: " + builder.serverName, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
 				@Override
 				public void process(RTSPServerEventsListener listener) {
 					listener.onServerStarted();
@@ -116,11 +116,12 @@ public class RTSPServer
 				}
 			});
 		} finally {
-			try {
-				serverSocket.close();
-			} catch (IOException e) {
-				logError("Error closing server socket", e);
-			}
+			dispatchModuleEvent("On Server Stopped: " + builder.serverName, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
+				@Override
+				public void process(RTSPServerEventsListener listener) {
+					listener.onServerStopped();
+				}
+			});
 		}
 	}
 
@@ -128,30 +129,28 @@ public class RTSPServer
 		if (serverThread != null || serverSocket != null)
 			throw new BadImplementationException("RTSP Server instances are for a single use, create another instance with same configuration!!");
 
-		SessionBuilder.getInstance()
-									.setSurfaceView(builder.cameraSurface)
-									.setPreviewOrientation(builder.orientation)
-									.setAudioEncoder(builder.audioEncoder)
-									.setVideoEncoder(builder.videoEncoder);
+		SessionBuilder.getInstance().setSurfaceView(builder.cameraSurface).setPreviewOrientation(builder.orientation).setAudioEncoder(builder.audioEncoder)
+				.setVideoEncoder(builder.videoEncoder);
 
 		serverThread = new Thread(this, "RTSP-" + builder.serverName);
 		serverThread.start();
 	}
 
 	public final void stop() {
-		serverThread = null;
-		try {
-			serverSocket.close();
-		} catch (IOException e) {
-			logError("Error closing server socket", e);
-		}
-
 		for (RTSPClient client : clients) {
 			try {
 				client.stop();
 			} catch (Exception e) {
 				logError("Error disconnecting client: " + client, e);
 			}
+		}
+
+		serverThread = null;
+
+		try {
+			serverSocket.close();
+		} catch (IOException e) {
+			logError("Error closing server socket", e);
 		}
 	}
 
