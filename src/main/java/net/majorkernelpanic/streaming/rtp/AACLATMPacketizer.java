@@ -31,7 +31,6 @@ import java.io.IOException;
  * This packetizer is used by the AACStream class in conjunction with the
  * MediaCodec API introduced in Android 4.1 (API Level 16).
  */
-@SuppressLint("NewApi")
 public class AACLATMPacketizer
 		extends AbstractPacketizer
 		implements Runnable {
@@ -118,11 +117,12 @@ public class AACLATMPacketizer
 					socket.commitBuffer();
 				}
 			}
-		} catch (IOException e) {
+		} catch (IOException | InterruptedException e) {
+			Log.e(TAG, e.getMessage() != null ? e.getMessage() : "unknown error");
 		} catch (ArrayIndexOutOfBoundsException e) {
 			Log.e(TAG, "ArrayIndexOutOfBoundsException: " + (e.getMessage() != null ? e.getMessage() : "unknown error"));
 			e.printStackTrace();
-		} catch (InterruptedException ignore) {}
+		}
 
 		Log.d(TAG, "AAC LATM packetizer stopped !");
 	}

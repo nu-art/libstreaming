@@ -24,6 +24,7 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.media.MediaRecorder;
+import android.media.MediaRecorder.AudioSource;
 import android.service.textservice.SpellCheckerService.Session;
 
 import com.nu.art.belog.Logger;
@@ -185,7 +186,7 @@ public class AACStream
 		mPacketizer.start();
 
 		if (mAudioRecord == null) {
-			mAudioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, mQuality.samplingRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
+			mAudioRecord = new AudioRecord(AudioSource.VOICE_RECOGNITION /*MIC has no noise reduction*/, mQuality.samplingRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
 			mAudioRecord.startRecording();
 
 			Thread mThread = new Thread(new Runnable() {
