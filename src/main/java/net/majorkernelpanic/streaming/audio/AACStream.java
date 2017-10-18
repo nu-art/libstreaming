@@ -186,7 +186,7 @@ public class AACStream
 		mPacketizer.start();
 
 		if (mAudioRecord == null) {
-			mAudioRecord = new AudioRecord(AudioSource.VOICE_RECOGNITION /*MIC has no noise reduction*/, mQuality.samplingRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
+			mAudioRecord = new AudioRecord(AudioSource.VOICE_COMMUNICATION /*MIC has no noise reduction*/, mQuality.samplingRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
 			mAudioRecord.startRecording();
 
 			Thread mThread = new Thread(new Runnable() {
@@ -252,7 +252,8 @@ public class AACStream
 	 */
 	public String getSessionDescription()
 			throws IllegalStateException {
-		return "m=audio " + String.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
+		return "m=audio " + String
+				.valueOf(getDestinationPorts()[0]) + " RTP/AVP 96" + LineBreak + "a=rtpmap:96 mpeg4-generic/" + mQuality.samplingRate + LineBreak + "a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config=" + Integer
 				.toHexString(mConfig) + "; SizeLength=13; IndexLength=3; IndexDeltaLength=3;" + LineBreak;
 	}
 
