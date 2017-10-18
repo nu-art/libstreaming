@@ -46,6 +46,8 @@ public class RTSPModule
 
 		String userName;
 
+		String destination;
+
 		String password;
 
 		SurfaceView cameraSurface;
@@ -75,6 +77,11 @@ public class RTSPModule
 
 		public RTSPServerBuilder setUserName(String userName) {
 			this.userName = userName;
+			return this;
+		}
+
+		public RTSPServerBuilder setDestination(String destination) {
+			this.destination = destination;
 			return this;
 		}
 

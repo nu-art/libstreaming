@@ -130,7 +130,7 @@ public class RTSPServer
 			throw new BadImplementationException("RTSP Server instances are for a single use, create another instance with same configuration!!");
 
 		SessionBuilder.getInstance().setSurfaceView(builder.cameraSurface).setPreviewOrientation(builder.orientation).setAudioEncoder(builder.audioEncoder)
-				.setVideoEncoder(builder.videoEncoder);
+				.setVideoEncoder(builder.videoEncoder).setDestination(builder.destination);
 
 		serverThread = new Thread(this, "RTSP-" + builder.serverName);
 		serverThread.start();
