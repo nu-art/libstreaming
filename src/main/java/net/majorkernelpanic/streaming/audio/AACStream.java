@@ -161,7 +161,7 @@ public class AACStream
 		mConfig = (mProfile & 0x1F) << 11 | (mSamplingRateIndex & 0x0F) << 7 | (mChannel & 0x0F) << 3;
 	}
 
-	private void startRecording()
+	private synchronized void startRecording()
 			throws IOException {
 
 		final int bufferSize = AudioRecord.getMinBufferSize(mQuality.samplingRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT) * 2;
