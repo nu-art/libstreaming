@@ -46,7 +46,7 @@ public class Request {
 
 		// Parsing request method & uri
 		if ((line = input.readLine()) == null)
-			throw new SocketException("Client disconnected");
+			return null;
 
 		String[] result = Regexp_Method.findRegex(1, line, 1, 2);
 		Log.d("REQUEST-LINE", line);

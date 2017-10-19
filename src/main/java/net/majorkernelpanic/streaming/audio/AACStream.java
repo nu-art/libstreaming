@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
 import static com.nu.art.rtsp.Response.LineBreak;
 
@@ -94,8 +95,6 @@ public class AACStream
 	private int mSamplingRateIndex;
 
 	private int mConfig;
-
-	private static AudioRecord mAudioRecord;
 
 	public AACStream() {
 		super();
@@ -161,6 +160,141 @@ public class AACStream
 		mConfig = (mProfile & 0x1F) << 11 | (mSamplingRateIndex & 0x0F) << 7 | (mChannel & 0x0F) << 3;
 	}
 
+	static class BufferItem {
+
+		int len;
+
+		byte[] inputBuffer;
+		private long timestamp;
+
+		BufferItem(int bufferLength) {
+			this.inputBuffer = new byte[bufferLength];
+		}
+	}
+
+	static class RecordBuffer
+			extends Logger {
+
+		private int MaxBuffer = 3;
+
+		private final ArrayList<BufferItem> bufferedItems = new ArrayList<>();
+		private final AudioQuality quality;
+		private final int bufferSize;
+		private MediaCodec[] mediaCodecs = {};
+		private AudioRecord mAudioRecord;
+
+		public RecordBuffer(int bufferSize, AudioQuality quality) {
+			this.bufferSize = bufferSize;
+			this.quality = quality;
+		}
+
+		void addMediaCodec(MediaCodec mediaCode) {
+			mediaCodecs = ArrayTools.appendElement(mediaCodecs, mediaCode);
+		}
+
+		private void startRecording() {
+			if (mAudioRecord != null)
+				return;
+
+			mAudioRecord = new AudioRecord(AudioSource.VOICE_COMMUNICATION /*MIC has no noise reduction*/, quality.samplingRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
+			mAudioRecord.startRecording();
+
+			Thread mThread = new Thread(new Runnable() {
+
+				@Override
+				public void run() {
+					try {
+						while (true) {
+							BufferItem buffer = new BufferItem(bufferSize);
+
+							byte[] sampler = buffer.inputBuffer;
+							int len = mAudioRecord.read(sampler, 0, sampler.length);
+							if (len == AudioRecord.ERROR_INVALID_OPERATION || len == AudioRecord.ERROR_BAD_VALUE)
+								break;
+
+							buffer.len = len;
+							buffer.timestamp = System.nanoTime() / 1000;
+							synchronized (bufferedItems) {
+								bufferedItems.add(0, buffer);
+								int size = bufferedItems.size();
+								logDebug("Added buffer, total: " + size);
+
+								while (size > MaxBuffer) {
+									int index = size - 1;
+									logDebug("removed buffer index: " + index);
+
+									bufferedItems.remove(index);
+								}
+							}
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+
+					logError("An error occur with the AudioRecord API !");
+					mAudioRecord.release();
+					try {
+						Thread.sleep(2000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+
+					mAudioRecord = null;
+					startRecording();
+				}
+			});
+			mThread.setPriority(Thread.MAX_PRIORITY);
+			mThread.start();
+
+			Thread bufferingThread = new Thread(new Runnable() {
+				@Override
+				public void run() {
+					while (true) {
+						int size;
+						BufferItem buffer = null;
+						synchronized (bufferedItems) {
+							size = bufferedItems.size();
+							if (size > 0) {
+								int index = size - 1;
+								logDebug("transmitting buffer: " + index + ", total clients: " + mediaCodecs.length);
+								buffer = bufferedItems.remove(index);
+							}
+						}
+
+						if (size == 0) {
+							try {
+								Thread.sleep(100);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+							continue;
+						}
+
+						for (MediaCodec mediaCodec : mediaCodecs) {
+							final ByteBuffer[] inputBuffers = mediaCodec.getInputBuffers();
+							int bufferIndex = mediaCodec.dequeueInputBuffer(10000);
+							final ByteBuffer inputBuffer = inputBuffers[bufferIndex];
+
+							inputBuffer.clear();
+							inputBuffer.put(buffer.inputBuffer);
+
+							mediaCodec.queueInputBuffer(bufferIndex, 0, buffer.len, buffer.timestamp, 0);
+						}
+					}
+				}
+			});
+
+			bufferingThread.setPriority(Thread.MAX_PRIORITY);
+			bufferingThread.start();
+		}
+
+		private void removeBuffer(MediaCodec mediaCodec) {
+			mediaCodecs = ArrayTools.removeElement(mediaCodecs, mediaCodec);
+		}
+	}
+
+	private static RecordBuffer recorderBuffer;
+
 	private synchronized void startRecording()
 			throws IOException {
 
@@ -179,50 +313,16 @@ public class AACStream
 		mMediaCodec = MediaCodec.createEncoderByType("audio/mp4a-latm");
 		mMediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
 		mMediaCodec.start();
-		mMediaCodecs = ArrayTools.appendElement(mMediaCodecs, mMediaCodec);
+		if (recorderBuffer == null) {
+			recorderBuffer = new RecordBuffer(bufferSize, mQuality);
+		}
+		recorderBuffer.addMediaCodec(mMediaCodec);
 
 		// The packetizer encapsulates this stream in an RTP stream and send it over the network
 		mPacketizer.setInputStream(new MediaCodecInputStream(mMediaCodec));
 		mPacketizer.start();
 
-		if (mAudioRecord == null) {
-			mAudioRecord = new AudioRecord(AudioSource.VOICE_COMMUNICATION /*MIC has no noise reduction*/, mQuality.samplingRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
-			mAudioRecord.startRecording();
-
-			Thread mThread = new Thread(new Runnable() {
-				@Override
-				public void run() {
-					int len, bufferIndex;
-					byte[] sampler = new byte[bufferSize];
-					try {
-						while (!Thread.interrupted()) {
-							len = mAudioRecord.read(sampler, 0, sampler.length);
-
-							for (MediaCodec mediaCodec : mMediaCodecs) {
-								final ByteBuffer[] inputBuffers = mediaCodec.getInputBuffers();
-								bufferIndex = mediaCodec.dequeueInputBuffer(10000);
-								final ByteBuffer inputBuffer = inputBuffers[bufferIndex];
-								inputBuffer.clear();
-								//								if (inputBuffer == null)
-								//									continue;
-								inputBuffer.put(sampler);
-								if (len == AudioRecord.ERROR_INVALID_OPERATION || len == AudioRecord.ERROR_BAD_VALUE) {
-									logError("An error occured with the AudioRecord API !");
-								} else {
-									//Log.v(TAG,"Pushing raw audio to the decoder: len="+len+" bs: "+inputBuffers[bufferIndex].capacity());
-									mediaCodec.queueInputBuffer(bufferIndex, 0, len, System.nanoTime() / 1000, 0);
-								}
-							}
-						}
-					} catch (RuntimeException e) {
-						e.printStackTrace();
-					}
-				}
-			});
-
-			mThread.setPriority(Thread.MAX_PRIORITY);
-			mThread.start();
-		}
+		recorderBuffer.startRecording();
 	}
 
 	/**
@@ -232,8 +332,7 @@ public class AACStream
 	public synchronized void stop() {
 		if (!mStreaming)
 			return;
-
-		mMediaCodecs = ArrayTools.removeElement(mMediaCodecs, mMediaCodec);
+		recorderBuffer.removeBuffer(mMediaCodec);
 
 		try {
 			mPacketizer.stop();
@@ -304,8 +403,6 @@ public class AACStream
 	private int mTTL = 64;
 
 	protected MediaCodec mMediaCodec;
-
-	protected static MediaCodec[] mMediaCodecs = {};
 
 	/**
 	 * Sets the destination IP address of the stream.

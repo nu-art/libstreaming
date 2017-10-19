@@ -129,12 +129,8 @@ public class RTSPServer
 		if (serverThread != null || serverSocket != null)
 			throw new BadImplementationException("RTSP Server instances are for a single use, create another instance with same configuration!!");
 
-		SessionBuilder.getInstance()
-									.setSurfaceView(builder.cameraSurface)
-									.setPreviewOrientation(builder.orientation)
-									.setAudioEncoder(builder.audioEncoder)
-									.setVideoEncoder(builder.videoEncoder)
-									.setDestination(builder.destination);
+		SessionBuilder.getInstance().setSurfaceView(builder.cameraSurface).setPreviewOrientation(builder.orientation).setAudioEncoder(builder.audioEncoder)
+				.setVideoEncoder(builder.videoEncoder).setDestination(builder.destination);
 
 		serverThread = new Thread(this, "RTSP-" + builder.serverName);
 		serverThread.start();
@@ -198,7 +194,9 @@ public class RTSPServer
 				Response response = new Response();
 
 				try {
-					Request.parseRequest(request, inputStream);
+					if (Request.parseRequest(request, inputStream) == null)
+						continue;
+
 					request.log(this);
 					try {
 						processRequest(request, response);
@@ -211,7 +209,7 @@ public class RTSPServer
 				} catch (Exception e) {
 					logError("Error processing the request", e);
 					return;
-//					response.setResponseCode(ResponseCode.BadRequest);
+					//					response.setResponseCode(ResponseCode.BadRequest);
 				}
 
 				try {
