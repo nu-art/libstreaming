@@ -208,8 +208,7 @@ public class RTSPServer
 					break;
 				} catch (Exception e) {
 					logError("Error processing the request", e);
-					return;
-					//					response.setResponseCode(ResponseCode.BadRequest);
+					response.setResponseCode(ResponseCode.BadRequest);
 				}
 
 				try {

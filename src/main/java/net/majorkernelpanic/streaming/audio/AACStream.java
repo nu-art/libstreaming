@@ -41,6 +41,8 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import static com.nu.art.rtsp.Response.LineBreak;
 
@@ -165,6 +167,7 @@ public class AACStream
 		int len;
 
 		byte[] inputBuffer;
+
 		private long timestamp;
 
 		BufferItem(int bufferLength) {
@@ -177,10 +180,14 @@ public class AACStream
 
 		private int MaxBuffer = 3;
 
-		private final ArrayList<BufferItem> bufferedItems = new ArrayList<>();
+		private final List<BufferItem> bufferedItems = Collections.synchronizedList(new ArrayList<BufferItem>());
+
 		private final AudioQuality quality;
+
 		private final int bufferSize;
+
 		private MediaCodec[] mediaCodecs = {};
+
 		private AudioRecord mAudioRecord;
 
 		public RecordBuffer(int bufferSize, AudioQuality quality) {
