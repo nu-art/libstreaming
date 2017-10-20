@@ -199,8 +199,8 @@ public class AACStream
 			mediaCodecs = ArrayTools.appendElement(mediaCodecs, mediaCode);
 		}
 
-		private void startRecording() {
-			if (mAudioRecord != null)
+		private synchronized void startRecording(boolean createNew) {
+			if (mAudioRecord != null && !createNew)
 				return;
 
 			mAudioRecord = new AudioRecord(AudioSource.VOICE_COMMUNICATION /*MIC has no noise reduction*/, quality.samplingRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
@@ -240,14 +240,14 @@ public class AACStream
 
 					logError("An error occur with the AudioRecord API !");
 					mAudioRecord.release();
+
 					try {
 						Thread.sleep(2000);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 
-					mAudioRecord = null;
-					startRecording();
+					startRecording(true);
 				}
 			});
 			mThread.setPriority(Thread.MAX_PRIORITY);
@@ -329,7 +329,7 @@ public class AACStream
 		mPacketizer.setInputStream(new MediaCodecInputStream(mMediaCodec));
 		mPacketizer.start();
 
-		recorderBuffer.startRecording();
+		recorderBuffer.startRecording(false);
 	}
 
 	/**
