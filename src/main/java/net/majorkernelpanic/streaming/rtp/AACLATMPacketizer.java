@@ -53,6 +53,13 @@ public class AACLATMPacketizer
 
 	public void stop() {
 		if (t != null) {
+			if (socket != null)
+				try {
+					socket.close();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
 			try {
 				is.close();
 			} catch (IOException ignore) {}

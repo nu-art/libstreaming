@@ -236,10 +236,6 @@ public class RTSPServer
 
 					on the other hand I THINK we saw other cases where the socket readLine returned null but I am not sure... please test this.
 */
-
-
-
-
 					request.log(this);
 					processRequest(request, response);
 				} catch (IOException e) {
