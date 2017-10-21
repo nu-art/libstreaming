@@ -16,6 +16,7 @@ public class Response {
 		Unauthorized(401, "Unauthorized"),
 		NotFound(404, "Not Found"),
 		NotAllowed(405, "Not Allowed"),
+		UnsupportedTransport(461, "Unsupported Transport"),
 		InternalServerError(500, "Internal Server Error"),
 		//
 		;
