@@ -29,6 +29,7 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.util.HashMap;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -52,6 +53,10 @@ public class RTSPServer
 	@Override
 	protected void init() {
 
+	}
+
+	public RTSPClient[] getClients() {
+		return clients;
 	}
 
 	public interface RTSPServerEventsListener {
@@ -164,6 +169,8 @@ public class RTSPServer
 
 		private final int localPort;
 
+		private final int remotePort;
+
 		private final BufferedReader inputStream;
 
 		private final OutputStream outputStream;
@@ -174,6 +181,28 @@ public class RTSPServer
 
 		private Session session;
 
+		private String sessionTag = UUID.randomUUID().toString();
+
+		public String getRemoteHostAddress() {
+			return remoteHostAddress;
+		}
+
+		public int getLocalPort() {
+			return localPort;
+		}
+
+		public int getRemotePort() {
+			return localPort;
+		}
+
+		public String getSessionTag() {
+			return sessionTag;
+		}
+
+		public Session getSession() {
+			return session;
+		}
+
 		RTSPClient(Socket clientSocket)
 				throws IOException {
 			inputStream = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
@@ -182,6 +211,7 @@ public class RTSPServer
 			remoteHostAddress = clientSocket.getInetAddress().getHostAddress();
 			localHostAddress = clientSocket.getLocalAddress().getHostAddress();
 			localPort = clientSocket.getLocalPort();
+			remotePort = clientSocket.getPort();
 			clientThread = new Thread(this);
 			clientThread.start();
 		}
@@ -195,20 +225,29 @@ public class RTSPServer
 
 				try {
 					if (Request.parseRequest(request, inputStream) == null)
-						continue;
+						break;
+/*
+					TODO I am conflicting about this.. break or continue??
+					continue;
+
+					I know for sure that if you force stop a client, the socket stays open
+					it keeps reading null from the stream, and will never recover unless closed
+					on the server end.
+
+					on the other hand I THINK we saw other cases where the socket readLine returned null but I am not sure... please test this.
+*/
+
+
+
 
 					request.log(this);
-					try {
-						processRequest(request, response);
-					} catch (IOException e) {
-						response.setResponseCode(ResponseCode.InternalServerError);
-					}
+					processRequest(request, response);
 				} catch (IOException e) {
 					logError("IO Error while processing the request", e);
-					break;
+					response.setResponseCode(ResponseCode.InternalServerError);
 				} catch (Exception e) {
 					logError("Error processing the request", e);
-					response.setResponseCode(ResponseCode.BadRequest);
+					response.setResponseCode(ResponseCode.InternalServerError);
 				}
 
 				try {
@@ -219,6 +258,8 @@ public class RTSPServer
 					break;
 				}
 			}
+
+			stop();
 			removeRTSPClient(this);
 		}
 
@@ -309,9 +350,14 @@ public class RTSPServer
 				response.setResponseCode(ResponseCode.NotFound);
 				return;
 			}
+			String transport = request.headers.get("transport");
+			if (transport.contains("RTP/AVP/TCP")) {
+				response.setResponseCode(ResponseCode.UnsupportedTransport);
+				return;
+			}
 
 			p = Pattern.compile("client_port=(\\d+)-(\\d+)", Pattern.CASE_INSENSITIVE);
-			m = p.matcher(request.headers.get("transport"));
+			m = p.matcher(transport);
 
 			if (!m.find()) {
 				int[] ports = session.getTrack(trackId).getDestinationPorts();
@@ -340,7 +386,7 @@ public class RTSPServer
 			String transportHeaderValue = stringBuilder.toString();
 
 			response.addHeader("Transport", transportHeaderValue);
-			response.addHeader("Session", "1185d20035702ca");
+			response.addHeader("Session", sessionTag);
 			response.addHeader("Cache-Control", "no-cache");
 		}
 
