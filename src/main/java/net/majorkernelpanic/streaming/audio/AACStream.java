@@ -175,7 +175,7 @@ public class AACStream
 		}
 	}
 
-	static class RecordBuffer
+	private static class RecordBuffer
 			extends Logger {
 
 		private int MaxBuffer = 3;
@@ -278,7 +278,14 @@ public class AACStream
 						}
 
 						for (MediaCodec mediaCodec : mediaCodecs) {
-							final ByteBuffer[] inputBuffers = mediaCodec.getInputBuffers();
+							ByteBuffer[] inputBuffers;
+							try {
+								inputBuffers = mediaCodec.getInputBuffers();
+							} catch (IllegalStateException e) {
+								logError(e);
+								continue;
+							}
+
 							int bufferIndex = mediaCodec.dequeueInputBuffer(10000);
 							final ByteBuffer inputBuffer = inputBuffers[bufferIndex];
 
@@ -335,7 +342,6 @@ public class AACStream
 	/**
 	 * Stops the stream.
 	 */
-
 	public synchronized void stop() {
 		if (!mStreaming)
 			return;
