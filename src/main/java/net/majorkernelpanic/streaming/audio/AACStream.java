@@ -175,7 +175,7 @@ public class AACStream
 		}
 	}
 
-	private static class RecordBuffer
+	public static class RecordBuffer
 			extends Logger {
 
 		private int MaxBuffer = 3;
@@ -188,7 +188,13 @@ public class AACStream
 
 		private MediaCodec[] mediaCodecs = {};
 
-		private AudioRecord mAudioRecord;
+		private AudioRecord audioRecord;
+
+		private Thread recordingThread;
+
+		private Thread bufferingThread;
+
+		private static boolean record;
 
 		public RecordBuffer(int bufferSize, AudioQuality quality) {
 			this.bufferSize = bufferSize;
@@ -200,22 +206,24 @@ public class AACStream
 		}
 
 		private synchronized void startRecording(boolean createNew) {
-			if (mAudioRecord != null && !createNew)
+			if (audioRecord != null && !createNew)
 				return;
 
-			mAudioRecord = new AudioRecord(AudioSource.VOICE_COMMUNICATION /*MIC has no noise reduction*/, quality.samplingRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
-			mAudioRecord.startRecording();
+			record = true;
 
-			Thread mThread = new Thread(new Runnable() {
+			audioRecord = new AudioRecord(AudioSource.VOICE_COMMUNICATION /*MIC has no noise reduction*/, quality.samplingRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
+			audioRecord.startRecording();
+
+			recordingThread = new Thread(new Runnable() {
 
 				@Override
 				public void run() {
 					try {
-						while (true) {
+						while (record) {
 							BufferItem buffer = new BufferItem(bufferSize);
 
 							byte[] sampler = buffer.inputBuffer;
-							int len = mAudioRecord.read(sampler, 0, sampler.length);
+							int len = audioRecord.read(sampler, 0, sampler.length);
 							if (len == AudioRecord.ERROR_INVALID_OPERATION || len == AudioRecord.ERROR_BAD_VALUE)
 								break;
 
@@ -239,24 +247,17 @@ public class AACStream
 					}
 
 					logError("An error occur with the AudioRecord API !");
-					mAudioRecord.release();
-
-					try {
-						Thread.sleep(2000);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-
-					startRecording(true);
+					audioRecord.release();
+					audioRecord = null;
 				}
 			});
-			mThread.setPriority(Thread.MAX_PRIORITY);
-			mThread.start();
+			recordingThread.setPriority(Thread.MAX_PRIORITY);
+			recordingThread.start();
 
-			Thread bufferingThread = new Thread(new Runnable() {
+			bufferingThread = new Thread(new Runnable() {
 				@Override
 				public void run() {
-					while (true) {
+					while (record) {
 						int size;
 						BufferItem buffer = null;
 						synchronized (bufferedItems) {
@@ -305,9 +306,13 @@ public class AACStream
 		private void removeBuffer(MediaCodec mediaCodec) {
 			mediaCodecs = ArrayTools.removeElement(mediaCodecs, mediaCodec);
 		}
+
+		public static synchronized void stopRecording() {
+			record = false;
+		}
 	}
 
-	private static RecordBuffer recorderBuffer;
+	public static RecordBuffer recorderBuffer;
 
 	private synchronized void startRecording()
 			throws IOException {
@@ -345,6 +350,7 @@ public class AACStream
 	public synchronized void stop() {
 		if (!mStreaming)
 			return;
+
 		recorderBuffer.removeBuffer(mMediaCodec);
 
 		try {
