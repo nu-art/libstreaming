@@ -90,7 +90,7 @@ public class RTSPServer
 			logInfo("Starting...");
 			serverSocket = new ServerSocket(builder.port);
 		} catch (final IOException e) {
-			dispatchModuleEvent("Error Starting Server: " + builder.serverName, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
+			dispatchModuleEvent("Error Starting Server: " + builder.serverName, new Processor<RTSPServerEventsListener>() {
 				@Override
 				public void process(RTSPServerEventsListener listener) {
 					listener.onStartingServerError(e);
@@ -100,7 +100,7 @@ public class RTSPServer
 		}
 
 		try {
-			dispatchModuleEvent("On Server Started: " + builder.serverName, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
+			dispatchModuleEvent("On Server Started: " + builder.serverName, new Processor<RTSPServerEventsListener>() {
 				@Override
 				public void process(RTSPServerEventsListener listener) {
 					listener.onServerStarted();
@@ -114,14 +114,14 @@ public class RTSPServer
 				new RTSPClient(clientSocket);
 			}
 		} catch (final IOException e) {
-			dispatchModuleEvent("Error connecting to client: " + builder.serverName, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
+			dispatchModuleEvent("Error connecting to client: " + builder.serverName, new Processor<RTSPServerEventsListener>() {
 				@Override
 				public void process(RTSPServerEventsListener listener) {
 					listener.onConnectingToClientError(e);
 				}
 			});
 		} finally {
-			dispatchModuleEvent("On Server Stopped: " + builder.serverName, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
+			dispatchModuleEvent("On Server Stopped: " + builder.serverName, new Processor<RTSPServerEventsListener>() {
 				@Override
 				public void process(RTSPServerEventsListener listener) {
 					listener.onServerStopped();
@@ -423,7 +423,7 @@ public class RTSPServer
 			}
 
 			// Parse the requested URI and configure the session
-			dispatchModuleEvent("New Session", OnRtspSessionListener.class, new Processor<OnRtspSessionListener>() {
+			dispatchModuleEvent("New Session", new Processor<OnRtspSessionListener>() {
 				@Override
 				public void process(OnRtspSessionListener onRtspSessionListener) {
 					onRtspSessionListener.onSessionsChanged();
@@ -464,22 +464,10 @@ public class RTSPServer
 
 	private void addRTSPClient(final RTSPClient client) {
 		clients = ArrayTools.appendElement(clients, client);
-		//		dispatchModuleEvent("On client connected: " + client, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
-		//			@Override
-		//			public void process(RTSPServerEventsListener listener) {
-		//				listener.onClientConnected(client);
-		//			}
-		//		});
 	}
 
 	private void removeRTSPClient(final RTSPClient client) {
 		clients = ArrayTools.removeElement(clients, client);
-		//		dispatchModuleEvent("On client disconnected: " + client, RTSPServerEventsListener.class, new Processor<RTSPServerEventsListener>() {
-		//			@Override
-		//			public void process(RTSPServerEventsListener listener) {
-		//				listener.onClientDisconnected(client);
-		//			}
-		//		});
 	}
 
 	@NonNull
