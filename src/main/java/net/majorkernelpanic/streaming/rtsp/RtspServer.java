@@ -586,7 +586,7 @@ public class RtspServer
 					// Parse the requested URI and configure the session
 					mSession = handleRequest(request.uri, mClient);
 					mSessions.put(mSession, null);
-					CyborgBuilder.getInstance().dispatchModuleEvent("New Session", OnRtspSessionListener.class, new Processor<OnRtspSessionListener>() {
+					CyborgBuilder.getInstance().dispatchModuleEvent("New Session", new Processor<OnRtspSessionListener>() {
 						@Override
 						public void process(OnRtspSessionListener onRtspSessionListener) {
 							onRtspSessionListener.onSessionsChanged();
