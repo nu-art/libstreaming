@@ -211,7 +211,7 @@ public class AACStream
 
 			record = true;
 
-			audioRecord = new AudioRecord(AudioSource.VOICE_COMMUNICATION /*MIC has no noise reduction*/, quality.samplingRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
+			audioRecord = new AudioRecord(AudioSource.MIC /*MIC has no noise reduction*/, quality.samplingRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
 			audioRecord.startRecording();
 
 			recordingThread = new Thread(new Runnable() {
